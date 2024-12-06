@@ -1,5 +1,11 @@
 import numpy as np
 import pandas as pd
+from enum import Enum
+
+class TrendType(Enum):
+    POLYNOMIAL = "polynomial"
+    EXPONENTIAL = "exponential"
+    LOGARITHMIC = "logarithmic"
 
 class TimeSeriesAttributes:
     def __init__(self):
@@ -28,19 +34,77 @@ class TimeSeriesGenerator:
         ''' Build the baseline component of the time series'''
         # Baseline
         self.ts = np.full(num_units, baseline_value, dtype=float)
+        return self
 
-    def build_trend(self, trend_change_points, max_trend_slope):
-        ''' Build the trend component of the time series'''
+    def build_trend(self, trend_change_points_list, trend_type_list, trend_params_list):
+        ''' Build the trend component of the time series '''
         # Trend with changes
         if self.ts is None:
             raise ValueError('Time series baseline has not been built')
 
-        trend = np.zeros(self.ts.size)
-        current_slope = np.random.uniform(-max_trend_slope, max_trend_slope)
-        for i in range(1, self.ts.size):
-            if np.random.rand() < trend_change_prob:  # Change trend slope
-                current_slope = np.random.uniform(-max_trend_slope, max_trend_slope)
-            trend[i] = trend[i - 1] + current_slope
+        trend = np.array([])
+
+        # Build the trend iteratively for each trend period (defined by the change point list)
+        for i in range(len(trend_change_points_list) - 1):
+            range_length = trend_change_points_list[i+1] - trend_change_points_list[i]
+            t = np.arange(range_length)
+            trend_piece = np.zeros(range_length)
+            trend_type = trend_type_list[i]
+            trend_params = trend_params_list[i]
+            if trend_type == TrendType.POLYNOMIAL:
+                # Polynomial trend
+                coefficients = trend_params.get('coefficients', [0.01, -0.1, 2])
+                trend_piece = np.polyval(coefficients, t)
+            elif trend_type == TrendType.EXPONENTIAL:
+                # Exponential trend
+                a = trend_params.get('a', 1)
+                b = trend_params.get('b', 0.01)
+                trend_piece = a * np.exp(b * t)
+            elif trend_type == TrendType.LOGARITHMIC:
+                # Logarithmic trend
+                a = trend_params.get('a', 10)
+                c = trend_params.get('c', 1)
+                trend_piece = a * np.log(t + 1) + c
+            else:
+                raise ValueError('Trend type not supported')
+            trend = np.concatenate((trend, trend_piece))
+        if trend.size != self.ts.size:
+            raise ValueError('Trend size does not match')
+        self.ts = self.ts + trend
+        return self
+
+    def build_seasonality(self, seasonality_params):
+        ''' Build the seasonal component of the time series '''
+        # Trend with changes
+        if self.ts is None:
+            raise ValueError('Time series baseline has not been built')
+
+        '''
+        seasonality_params = [{"seasonality"},...]
+        '''
+
+        '''    # Handle seasonality intervals
+        if seasonality_intervals_list is None:
+            seasonality_intervals_list = [(0, self.ts.size)]  # Entire time series
+        for start, end in seasonality_intervals_list:
+            for freq in seasonality_frequencies_list:
+                # Calculate amplitude pattern
+                if seasonality_amplitude_pattern == 'constant':
+                    amplitude = seasonality_base_amplitude
+                elif seasonality_amplitude_pattern == 'increasing':
+                    amplitude = np.linspace(0, seasonality_base_amplitude, end - start)
+                elif seasonality_amplitude_pattern == 'decreasing':
+                    amplitude = np.linspace(seasonality_base_amplitude, 0, end - start)
+                elif seasonality_amplitude_pattern == 'wave':
+                    amplitude = seasonality_base_amplitude * (
+                            1 + np.sin(2 * np.pi * np.arange(end - start) / (2 * (end - start)))
+                    )
+
+                # Generate seasonality for the interval
+                seasonal_component = amplitude * np.sin(2 * np.pi * np.arange(start, end) / freq)
+                seasonality[start:end] += seasonal_component
+
+        return self'''
 
 def generate_energy_series_v3(
         num_days=365,

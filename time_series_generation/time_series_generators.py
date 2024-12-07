@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from enum import Enum
+import json
 
 class TrendType(Enum):
     POLYNOMIAL = "polynomial"
@@ -136,11 +137,11 @@ class TimeSeriesGenerator:
         self.ts = self.ts + seasonality
         return self
 
-    def build_noise(self, noise_std):
+    def build_noise(self, noise_std, baseline_value):
         """Build the noise component of the time series """
         # Noise
         noise = np.random.normal(0, noise_std, self.ts.size)
-        self.ts = self.ts + noise
+        self.ts = self.ts + noise * baseline_value
         return self
 
     def build_inactivity(self, inactivity_prob):
@@ -169,24 +170,34 @@ class TimeSeriesGenerator:
     def generate(self):
         return self.ts
 
+    def reset(self):
+        self.ts = None
+        return self
+
+class TimeSeriesFlags:
+    def __init__(self, trend : bool, seasonal : bool, noise : bool, spike : bool, inactivity : bool,  max : bool):
+        self.trend = trend
+        self.seasonal = seasonal
+        self.noise = noise
+        self.spike = spike
+        self.inactivity = inactivity
+        self.max = max
+
+
+class TimeSeriesDirector:
+    def __init__(self, time_series_generator: TimeSeriesGenerator):
+        self.time_series_generator = time_series_generator
+        with open("tsg_config.json", "w") as config_file:
+            self.config = json.load(config_file)
+
+    def make_ts(self, ts_flags : TimeSeriesFlags):
+        self.time_series_generator.reset()
 
 
 
-# Example: Generate and visualize advanced seasonal behaviors
-simulated_data_v3 = generate_energy_series_v3(
-    num_days=365 * 2,
-    daily_baseline=120,
-    trend_change_prob=0.05,
-    max_trend_slope=0.3,
-    allow_seasonality=True,
-    seasonality_intervals=[(30, 180), (200, 300)],  # Seasonality active only in these intervals
-    seasonality_frequencies=[7, 30],  # Weekly and monthly seasonality
-    seasonality_amplitude_pattern='wave',  # Amplitude follows a wave pattern
-    seasonality_base_amplitude=20,
-    noise_std=5,
-    inactivity_prob=0.1,
-    spike_prob=0.05,
-    spike_multiplier_range=(2, 4)
-)
+
+
+
+
 
 simulated_data_v3.plot(x='day', y='energy_consumption', title="Advanced Seasonal Behaviors")

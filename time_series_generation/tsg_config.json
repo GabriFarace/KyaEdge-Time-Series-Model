@@ -1,0 +1,53 @@
+{
+  "baseline" : {
+    "n_years_max" : 20,
+    "baseline_min" : 10,
+    "baseline_max" : 500
+  },
+  "trend" : {
+    "max_shift_year" : 20,
+    "prob_poly_exp_log" : [0.8, 0.1, 0.1],
+    "poly_params" : {
+      "prob_linear_above" : [0.8, 0.2],
+      "max_degree" : 3,
+      "multiplicative_coeff_range_ratio" : [-0.5, 0.5]
+    },
+    "exp_params" : {
+      "multiplicative_coeff_range_ratio" : [-0.01, 0.01],
+      "exp_coeff_range_ratio" : [-0.001, 0.001]
+    },
+    "log_params" : {
+      "multiplicative_coeff_range_ratio" : [-0.1, 0.1],
+      "additive_coeff_range_ratio" : [-0.01, 0.01]
+    }
+  },
+  "seasonal" : {
+    "frequencies" : [
+      {"value" :  7, "duration_list" : [30, 60, 90, 120, 150, 180, 365, 730, 1825]},
+      {"value" :  14, "duration_list" : [60, 90, 120, 150, 180, 365, 730, 1825]},
+      {"value" :  30, "duration_list" : [120, 150, 180, 365, 730, 1825]},
+      {"value" :  60, "duration_list" : [180, 365, 730, 1825]},
+      {"value" :  90, "duration_list" : [365, 730, 1825]},
+      {"value" :  180, "duration_list" : [730, 1825]},
+      {"value" :  365, "duration_list" : [1825]},
+      {"value" :  730, "duration_list" : []}
+    ],
+    "max_number_frequencies" : 3,
+    "amplitude_coeff_range_ratio" : [0.1, 0.5],
+    "prob_type_si_tr_sq_sa_sp" : [0.2, 0.2, 0.2, 0.2, 0.2],
+    "prob_pattern_c_i_d" : [0.8, 0.1, 0.1]
+  },
+  "noise" : {
+    "baseline_range_ratio" : [0.01, 0.02],
+    "std_max" : 3
+  },
+  "inactivity" : {
+    "max_prob" : 0.1
+  },
+  "spikes" : {
+    "baseline_range_ratio" : [0.8, 1],
+    "min_range" : 2,
+    "max_range" : 4,
+    "max_prob" : 0.01
+  }
+}

@@ -1,3 +1,5 @@
+from logging import Logger
+
 import numpy as np
 import pandas as pd
 from enum import Enum
@@ -28,7 +30,7 @@ class TrendAttributes:
 
 
 class SeasonalityAttributes:
-    def __init__(self, seasonality_frequency : int, seasonality_intervals : list, seasonality_type : SeasonalityType, seasonality_base_amplitude : float, seasonality_amplitude_pattern : SeasonalityAmplitudePattern):
+    def __init__(self, seasonality_frequency : int, seasonality_intervals : list[tuple[int, int]], seasonality_type : SeasonalityType, seasonality_base_amplitude : float, seasonality_amplitude_pattern : SeasonalityAmplitudePattern):
         self.seasonality_intervals = seasonality_intervals,
         self.seasonality_frequency = seasonality_frequency,
         self.seasonality_type = seasonality_type,
@@ -42,13 +44,13 @@ class TimeSeriesGenerator:
     def __init__(self):
         self.ts = None
 
-    def build_baseline(self, num_units, baseline_value):
+    def build_baseline(self, num_units : int, baseline_value : float):
         ''' Build the baseline component of the time series'''
         # Baseline
         self.ts = np.full(num_units, baseline_value, dtype=float)
         return self
 
-    def build_trend(self, trend_attributes_list):
+    def build_trend(self, trend_attributes_list : list[TrendAttributes]):
         ''' Build the trend component of the time series '''
         # Trend with changes
         if self.ts is None:
@@ -87,7 +89,7 @@ class TimeSeriesGenerator:
         self.ts = self.ts + trend
         return self
 
-    def build_seasonality(self, seasonality_attributes_list):
+    def build_seasonality(self, seasonality_attributes_list : list[SeasonalityAttributes]):
         ''' Build the seasonal component of the time series '''
         # Trend with changes
         if self.ts is None:
@@ -152,13 +154,13 @@ class TimeSeriesGenerator:
                 self.ts[i] = 0
         return self
 
-    def build_spikes(self, spike_prob, spike_multiplier_range, baseline):
+    def build_spikes(self, spike_prob, spike_min_multiplier, spike_max_multiplier, baseline):
         ''' Build the spike component of the time series '''
 
         # Add spikes
         for i in range(self.ts.size):
             if np.random.rand() < spike_prob:
-                spike_multiplier = np.random.uniform(*spike_multiplier_range)
+                spike_multiplier = np.random.uniform(spike_min_multiplier, spike_max_multiplier)
                 self.ts[i] += spike_multiplier * baseline
         return self
 
@@ -174,30 +176,203 @@ class TimeSeriesGenerator:
         self.ts = None
         return self
 
+
 class TimeSeriesFlags:
     def __init__(self, trend : bool, seasonal : bool, noise : bool, spike : bool, inactivity : bool,  max : bool):
         self.trend = trend
         self.seasonal = seasonal
         self.noise = noise
-        self.spike = spike
+        self.spikes = spike
         self.inactivity = inactivity
         self.max = max
 
 
 class TimeSeriesDirector:
-    def __init__(self, time_series_generator: TimeSeriesGenerator):
+    def __init__(self, time_series_generator: TimeSeriesGenerator, logger : Logger, config: dict):
         self.time_series_generator = time_series_generator
-        with open("tsg_config.json", "w") as config_file:
-            self.config = json.load(config_file)
+        self.config = config
+        self.logger = logger
 
-    def make_ts(self, ts_flags : TimeSeriesFlags):
+    def _baseline_parameters_generation(self):
+        ''' Generate the parameters for the baseline component using the configuration file'''
+        baseline_config = self.config["baseline"]
+        num_units = np.random.choice(np.arange(1, baseline_config["n_years_max"] + 1)) * 365
+        baseline_value = np.random.uniform(baseline_config["baseline_min"], baseline_config["baseline_max"])
+        self.logger.info("Baseline")
+        self.logger.info(f"Baseline : Units -> {num_units}, Baseline Value -> {baseline_value}")
+        return num_units, baseline_value
+
+    def _trend_parameters_generation(self, num_units, baseline_value):
+        ''' Generate the parameters for the trend component using the configuration file'''
+        trend_config = self.config["trend"]
+        num_shifts = (np.random.choice(np.arange(1,trend_config["max_shift_year"] + 1)) ) * (365 / num_units)
+        change_points = np.random.choice(np.arange(1, num_units + 1), num_shifts, replace=False)
+        change_points = np.sort(change_points)
+        trend_intervals = [(int(change_points[i]), int(change_points[i + 1])) for i in range(change_points.size - 1)]
+        trend_attributes_list = []
+        self.logger.info("\n\n TREND")
+        for trend_interval in trend_intervals:
+            trend_type = np.random.choice([TrendType.POLYNOMIAL, TrendType.EXPONENTIAL, TrendType.LOGARITHMIC],
+                                          p=trend_config["prob_poly_exp_log"])
+            if trend_type == TrendType.POLYNOMIAL:
+                degree = np.random.choice(np.arange(len(trend_config["poly_params"]["prob_num_degree"])),
+                                          p=trend_config["poly_params"]["prob_num_degree"])
+                coeff_0 = 0 if degree == 0 else np.random.uniform(0.5 * baseline_value, 1.5 * baseline_value)
+                coefficients = [coeff_0]
+                for i in range(1, degree + 1):
+                    coefficients.append(baseline_value * np.random.uniform(
+                        trend_config["poly_params"]["multiplicative_coeff_range_ratio"][0],
+                        trend_config["poly_params"]["multiplicative_coeff_range_ratio"][1]))
+                trend_params = {"coefficients": coefficients[::-1]}
+            elif trend_type == TrendType.EXPONENTIAL:
+                a = baseline_value * np.random.uniform(
+                    trend_config["exp_params"]["multiplicative_coeff_range_ratio"][0],
+                    trend_config["exp_params"]["multiplicative_coeff_range_ratio"][1])
+                b = baseline_value * np.random.uniform(trend_config["exp_params"]["exp_coeff_range_ratio"][0],
+                                                       trend_config["exp_params"]["exp_coeff_range_ratio"][1])
+                trend_params = {"a": a, "b": b}
+            elif trend_type == TrendType.LOGARITHMIC:
+                a = baseline_value * np.random.uniform(
+                    trend_config["log_params"]["multiplicative_coeff_range_ratio"][0],
+                    trend_config["log_params"]["multiplicative_coeff_range_ratio"][1])
+                c = baseline_value * np.random.uniform(trend_config["log_params"]["additive_coeff_range_ratio"][0],
+                                                       trend_config["log_params"]["additive_coeff_range_ratio"][1])
+                trend_params = {"a": a, "c": c}
+            else:
+                raise ValueError(f"Unknown trend type: {trend_type}")
+            trend_attributes_list.append(TrendAttributes(trend_interval, trend_type, trend_params))
+            self.logger.info(f"Trend : Interval -> {trend_interval}, Type -> {trend_type.value},Params -> {trend_params}")
+        return trend_attributes_list
+
+    def _seasonal_parameters_generation(self, num_units, baseline_value):
+        ''' Generate the parameters for the seasonal component using the configuration file'''
+        seasonal_config = self.config["seasonal"]
+        seasonality_attributes_list = []
+        num_frequencies = np.random.choice(np.arange(1,seasonal_config["max_number_frequencies"] + 1))
+        frequencies = np.random.choice(seasonal_config["frequencies"], num_frequencies, replace=False)
+        self.logger.info("\n\n SEASONALITY")
+        for seasonality_frequency in frequencies:
+            all_unit = np.random.choice([True, False], p=seasonal_config["prob_all_partial"])
+            seasonality_intervals = []
+            if not all_unit:
+                seasonality_frequency["duration_list"] = [duration for duration in seasonality_frequency["duration_list"] if duration < num_units]
+                duration = np.random.choice(seasonality_frequency["duration_list"])
+                current_point = 0
+                go = True
+                while (num_units - current_point > duration) and go:
+                    starting_point = np.random.choice(np.arange(current_point, num_units - duration))
+                    seasonality_intervals.append((starting_point, starting_point + duration))
+                    current_point = starting_point
+                    go = np.random.choice([True, False])
+
+            seasonality_type = np.random.choice([SeasonalityType.SINUSOIDAL, SeasonalityType.TRIANGULAR, SeasonalityType.SQUARE, SeasonalityType.SAWTOOTH, SeasonalityType.SPIKE],
+                                        p=seasonal_config["prob_type_si_tr_sq_sa_sp"])
+            seasonality_base_amplitude = baseline_value * np.random.uniform(
+                        seasonal_config["amplitude_coeff_range_ratio"][0],
+                        seasonal_config["amplitude_coeff_range_ratio"][1])
+
+            seasonality_amplitude_pattern = np.random.choice([SeasonalityAmplitudePattern.CONSTANT, SeasonalityAmplitudePattern.INCREASING, SeasonalityAmplitudePattern.DECREASING],
+                                        p=seasonal_config["prob_pattern_c_i_d"])
+
+            seasonality_attributes_list.append(SeasonalityAttributes(seasonality_frequency, seasonality_intervals, seasonality_type, seasonality_base_amplitude, seasonality_amplitude_pattern))
+            self.logger.info(
+                f"Trend : Frequency -> {seasonality_frequency}, Intervals -> {seasonality_intervals} , Type -> {seasonality_type.value}, Amplitude -> {seasonality_base_amplitude}, Amplitude Pattern -> {seasonality_amplitude_pattern.value}")
+        return seasonality_attributes_list
+
+    def _noise_parameters_generation(self, baseline):
+        ''' Generate the parameters for the noise component using the configuration file'''
+        noise_config = self.config["noise"]
+        noise_std = np.random.uniform(0, noise_config["std_max"])
+        baseline_value = baseline * np.random.uniform(
+                                        noise_config["baseline_range_ratio"][0],
+                                        noise_config["baseline_range_ratio"][1])
+        self.logger.info("\n\n NOISE")
+        self.logger.info(f"Standard Deviation -> {noise_std}, Baseline -> {baseline_value}")
+        return noise_std, baseline_value
+
+    def _inactivity_parameters_generation(self):
+        ''' Generate the parameters for the inactivity component using the configuration file'''
+        self.logger.info("\n\n INACTIVITY")
+        inactivity_prob = np.random.uniform(0, self.config["inactivity"]["max_prob"])
+        self.logger.info(f"Probability -> {inactivity_prob}")
+        return inactivity_prob
+
+    def _spikes_parameters_generation(self, baseline):
+        ''' Generate the parameters for the spikes component using the configuration file'''
+        spikes_config = self.config["spikes"]
+        spikes_prob = np.random.uniform(0, spikes_config["max_prob"])
+        baseline_value = baseline * np.random.uniform(
+                                        spikes_config["baseline_range_ratio"][0],
+                                        spikes_config["baseline_range_ratio"][1])
+        self.logger.info("\n\n SPIKES")
+        self.logger.info(f"Probability -> {spikes_prob}, Baseline -> {baseline_value}")
+        return spikes_prob, spikes_config["min_range"], spikes_config["max_range"], baseline_value
+
+    def make_ts_conditional(self, ts_flags : TimeSeriesFlags):
+        '''
+        Use the builder to make the time series with the components specified by ts_flags and generating randomly
+        the parameters using the configurations
+        '''
         self.time_series_generator.reset()
 
+        # Build the baseline
+        num_units, baseline_value = self._baseline_parameters_generation()
+        self.time_series_generator.build_baseline(num_units, baseline_value)
+
+        # Build the trend
+        if ts_flags.trend:
+            self.time_series_generator.build_trend(self._trend_parameters_generation(num_units, baseline_value))
+
+        # Build the seasonality
+        if ts_flags.seasonal:
+            self.time_series_generator.build_seasonality(self._seasonal_parameters_generation(num_units, baseline_value))
+
+        # Build the noise
+        if ts_flags.noise:
+            self.time_series_generator.build_noise(*self._noise_parameters_generation(baseline_value))
+
+        # Build the spikes
+        if ts_flags.spikes:
+            self.time_series_generator.build_spikes(*self._spikes_parameters_generation(baseline_value))
+
+        # Build the inactivity
+        if ts_flags.inactivity:
+            self.time_series_generator.build_inactivity(self._inactivity_parameters_generation())
+
+        # Add max
+        if ts_flags.max:
+            self.time_series_generator.build_max()
+
+    def make_ts_all(self):
+        '''
+        Use the builder to make the time series with all the components and generating randomly
+        the parameters using the configurations
+        '''
+        self.time_series_generator.reset()
+
+        # Build the baseline
+        num_units, baseline_value = self._baseline_parameters_generation()
+        self.time_series_generator.build_baseline(num_units, baseline_value)
+
+        # Build the trend
+        self.time_series_generator.build_trend(self._trend_parameters_generation(num_units, baseline_value))
+
+        # Build the seasonality
+        self.time_series_generator.build_seasonality(self._seasonal_parameters_generation(num_units, baseline_value))
+
+        # Build the noise
+        self.time_series_generator.build_noise(*self._noise_parameters_generation(baseline_value))
+
+        # Build the spikes
+        self.time_series_generator.build_spikes(*self._spikes_parameters_generation(baseline_value))
+
+        # Build the inactivity
+        self.time_series_generator.build_inactivity(self._inactivity_parameters_generation())
+
+        # Add max
+        self.time_series_generator.build_max()
 
 
 
 
-
-
-
-simulated_data_v3.plot(x='day', y='energy_consumption', title="Advanced Seasonal Behaviors")
+#simulated_data_v3.plot(x='day', y='energy_consumption', title="Advanced Seasonal Behaviors")

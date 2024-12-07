@@ -8,9 +8,8 @@
     "max_shift_year" : 20,
     "prob_poly_exp_log" : [0.8, 0.1, 0.1],
     "poly_params" : {
-      "prob_linear_above" : [0.8, 0.2],
-      "max_degree" : 3,
-      "multiplicative_coeff_range_ratio" : [-0.5, 0.5]
+      "prob_num_degree" : [0.5, 0.4, 0.1],
+      "multiplicative_coeff_range_ratio" : [-0.01, 0.01]
     },
     "exp_params" : {
       "multiplicative_coeff_range_ratio" : [-0.01, 0.01],
@@ -22,6 +21,7 @@
     }
   },
   "seasonal" : {
+    "prob_all_partial" : [0.8, 0.2],
     "frequencies" : [
       {"value" :  7, "duration_list" : [30, 60, 90, 120, 150, 180, 365, 730, 1825]},
       {"value" :  14, "duration_list" : [60, 90, 120, 150, 180, 365, 730, 1825]},
@@ -29,8 +29,7 @@
       {"value" :  60, "duration_list" : [180, 365, 730, 1825]},
       {"value" :  90, "duration_list" : [365, 730, 1825]},
       {"value" :  180, "duration_list" : [730, 1825]},
-      {"value" :  365, "duration_list" : [1825]},
-      {"value" :  730, "duration_list" : []}
+      {"value" :  365, "duration_list" : [1825]}
     ],
     "max_number_frequencies" : 3,
     "amplitude_coeff_range_ratio" : [0.1, 0.5],

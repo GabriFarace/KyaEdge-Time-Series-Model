@@ -1,9 +1,7 @@
 from logging import Logger
-
 import numpy as np
-import pandas as pd
 from enum import Enum
-import json
+
 
 class TrendType(Enum):
     POLYNOMIAL = "polynomial"
@@ -15,7 +13,6 @@ class SeasonalityType(Enum):
     TRIANGULAR = "triangular"
     SQUARE = "square"
     SAWTOOTH = "sawtooth"
-    SPIKE = "spike"
 
 class SeasonalityAmplitudePattern(Enum):
     CONSTANT = "constant"
@@ -31,10 +28,10 @@ class TrendAttributes:
 
 class SeasonalityAttributes:
     def __init__(self, seasonality_frequency : int, seasonality_intervals : list[tuple[int, int]], seasonality_type : SeasonalityType, seasonality_base_amplitude : float, seasonality_amplitude_pattern : SeasonalityAmplitudePattern):
-        self.seasonality_intervals = seasonality_intervals,
-        self.seasonality_frequency = seasonality_frequency,
-        self.seasonality_type = seasonality_type,
-        self.seasonality_base_amplitude = seasonality_base_amplitude,
+        self.seasonality_intervals = seasonality_intervals
+        self.seasonality_frequency = seasonality_frequency
+        self.seasonality_type = seasonality_type
+        self.seasonality_base_amplitude = seasonality_base_amplitude
         self.seasonality_amplitude_pattern = seasonality_amplitude_pattern
 
 
@@ -61,8 +58,8 @@ class TimeSeriesGenerator:
 
         # Build the trend iteratively for each trend period (defined by the change point list)
         for trend_attributes in trend_attributes_list:
-            a, b = trend_attributes.trend_interval[0], trend_attributes.trend_interval[1]
-            t = np.arange(b - a)
+            min_a, min_b = trend_attributes.trend_interval[0], trend_attributes.trend_interval[1]
+            t = np.arange(min_b - min_a)
             trend_p = np.zeros(ts_length)
             trend_type = trend_attributes.trend_type
             trend_params = trend_attributes.trend_params
@@ -82,7 +79,7 @@ class TimeSeriesGenerator:
                 trend_piece = a * np.log(t + 1) + c
             else:
                 raise ValueError('Trend type not supported')
-            trend_p[a:b] = trend_piece
+            trend_p[min_a:min_b] = trend_piece
             trend = trend + trend_p
         if trend.size != ts_length:
             raise ValueError('Trend size does not match')
@@ -108,16 +105,14 @@ class TimeSeriesGenerator:
             seasonality_intervals = seasonality_attributes.seasonality_intervals
 
             # Handle seasonality intervals
-            if len(seasonality_intervals) == 0:
-                seasonality_intervals = [(0, self.ts.size)]  # Entire time series
             for start, end in seasonality_intervals:
                 # Define seasonality amplitude
                 if amplitude_pattern == SeasonalityAmplitudePattern.CONSTANT:
                     amplitude = base_amplitude
                 elif amplitude_pattern == SeasonalityAmplitudePattern.INCREASING:
-                    amplitude = np.linspace(0, base_amplitude, end - start)
+                    amplitude = np.linspace(0., base_amplitude, end - start)
                 elif amplitude_pattern == SeasonalityAmplitudePattern.DECREASING:
-                    amplitude = np.linspace(base_amplitude, 0, end - start)
+                    amplitude = np.linspace(base_amplitude, 0., end - start)
                 else:
                     raise ValueError('Amplitude pattern not supported')
 
@@ -130,9 +125,6 @@ class TimeSeriesGenerator:
                     seasonal_component = amplitude * np.sign(np.sin(2 * np.pi * np.arange(start, end) / freq))
                 elif type == SeasonalityType.SAWTOOTH:
                     seasonal_component = amplitude * ((np.arange(start, end) % freq) / freq)
-                elif type == SeasonalityType.SPIKE:
-                    spike_days = [0, int(freq / 2)]  # Spikes at start and midpoint of the period
-                    seasonal_component = amplitude if (np.arange(start, end) % freq) in spike_days else 0
                 else:
                     raise ValueError(f"Unknown seasonality type: {type}")
                 seasonality[start:end] += seasonal_component
@@ -205,7 +197,7 @@ class TimeSeriesDirector:
     def _trend_parameters_generation(self, num_units, baseline_value):
         ''' Generate the parameters for the trend component using the configuration file'''
         trend_config = self.config["trend"]
-        num_shifts = (np.random.choice(np.arange(1,trend_config["max_shift_year"] + 1)) ) * (365 / num_units)
+        num_shifts = (np.random.choice(np.arange(1,trend_config["max_shift_year"] + 1)) ) * (num_units // 365)
         change_points = np.random.choice(np.arange(1, num_units + 1), num_shifts, replace=False)
         change_points = np.sort(change_points)
         trend_intervals = [(int(change_points[i]), int(change_points[i + 1])) for i in range(change_points.size - 1)]
@@ -217,7 +209,7 @@ class TimeSeriesDirector:
             if trend_type == TrendType.POLYNOMIAL:
                 degree = np.random.choice(np.arange(len(trend_config["poly_params"]["prob_num_degree"])),
                                           p=trend_config["poly_params"]["prob_num_degree"])
-                coeff_0 = 0 if degree == 0 else np.random.uniform(0.5 * baseline_value, 1.5 * baseline_value)
+                coeff_0 = 0 if not degree == 0 else np.random.uniform(0.5 * baseline_value, 1.5 * baseline_value)
                 coefficients = [coeff_0]
                 for i in range(1, degree + 1):
                     coefficients.append(baseline_value * np.random.uniform(
@@ -256,17 +248,21 @@ class TimeSeriesDirector:
             seasonality_intervals = []
             if not all_unit:
                 seasonality_frequency["duration_list"] = [duration for duration in seasonality_frequency["duration_list"] if duration < num_units]
+                if len(seasonality_frequency["duration_list"]) == 0:
+                    seasonality_frequency["duration_list"] = [num_units - 1]
                 duration = np.random.choice(seasonality_frequency["duration_list"])
                 current_point = 0
                 go = True
                 while (num_units - current_point > duration) and go:
                     starting_point = np.random.choice(np.arange(current_point, num_units - duration))
                     seasonality_intervals.append((starting_point, starting_point + duration))
-                    current_point = starting_point
+                    current_point = starting_point + duration
                     go = np.random.choice([True, False])
+            else:
+                seasonality_intervals = [(0, num_units)]  # Entire time series
 
-            seasonality_type = np.random.choice([SeasonalityType.SINUSOIDAL, SeasonalityType.TRIANGULAR, SeasonalityType.SQUARE, SeasonalityType.SAWTOOTH, SeasonalityType.SPIKE],
-                                        p=seasonal_config["prob_type_si_tr_sq_sa_sp"])
+            seasonality_type = np.random.choice([SeasonalityType.SINUSOIDAL, SeasonalityType.TRIANGULAR, SeasonalityType.SQUARE, SeasonalityType.SAWTOOTH],
+                                        p=seasonal_config["prob_type_si_tr_sq_sa"])
             seasonality_base_amplitude = baseline_value * np.random.uniform(
                         seasonal_config["amplitude_coeff_range_ratio"][0],
                         seasonal_config["amplitude_coeff_range_ratio"][1])
@@ -274,9 +270,9 @@ class TimeSeriesDirector:
             seasonality_amplitude_pattern = np.random.choice([SeasonalityAmplitudePattern.CONSTANT, SeasonalityAmplitudePattern.INCREASING, SeasonalityAmplitudePattern.DECREASING],
                                         p=seasonal_config["prob_pattern_c_i_d"])
 
-            seasonality_attributes_list.append(SeasonalityAttributes(seasonality_frequency, seasonality_intervals, seasonality_type, seasonality_base_amplitude, seasonality_amplitude_pattern))
+            seasonality_attributes_list.append(SeasonalityAttributes(seasonality_frequency["value"], seasonality_intervals, seasonality_type, seasonality_base_amplitude, seasonality_amplitude_pattern))
             self.logger.info(
-                f"Trend : Frequency -> {seasonality_frequency}, Intervals -> {seasonality_intervals} , Type -> {seasonality_type.value}, Amplitude -> {seasonality_base_amplitude}, Amplitude Pattern -> {seasonality_amplitude_pattern.value}")
+                f"Seasonality : Frequency -> {seasonality_frequency}, Intervals -> {seasonality_intervals} , Type -> {seasonality_type.value}, Amplitude -> {seasonality_base_amplitude}, Amplitude Pattern -> {seasonality_amplitude_pattern.value}")
         return seasonality_attributes_list
 
     def _noise_parameters_generation(self, baseline):
@@ -287,14 +283,14 @@ class TimeSeriesDirector:
                                         noise_config["baseline_range_ratio"][0],
                                         noise_config["baseline_range_ratio"][1])
         self.logger.info("\n\n NOISE")
-        self.logger.info(f"Standard Deviation -> {noise_std}, Baseline -> {baseline_value}")
+        self.logger.info(f"Noise : Standard Deviation -> {noise_std}, Baseline -> {baseline_value}")
         return noise_std, baseline_value
 
     def _inactivity_parameters_generation(self):
         ''' Generate the parameters for the inactivity component using the configuration file'''
         self.logger.info("\n\n INACTIVITY")
         inactivity_prob = np.random.uniform(0, self.config["inactivity"]["max_prob"])
-        self.logger.info(f"Probability -> {inactivity_prob}")
+        self.logger.info(f"Inactivity : Probability -> {inactivity_prob}")
         return inactivity_prob
 
     def _spikes_parameters_generation(self, baseline):
@@ -305,7 +301,7 @@ class TimeSeriesDirector:
                                         spikes_config["baseline_range_ratio"][0],
                                         spikes_config["baseline_range_ratio"][1])
         self.logger.info("\n\n SPIKES")
-        self.logger.info(f"Probability -> {spikes_prob}, Baseline -> {baseline_value}")
+        self.logger.info(f"Spikes : Probability -> {spikes_prob}, Baseline -> {baseline_value}")
         return spikes_prob, spikes_config["min_range"], spikes_config["max_range"], baseline_value
 
     def make_ts_conditional(self, ts_flags : TimeSeriesFlags):

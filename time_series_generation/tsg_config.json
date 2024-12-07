@@ -5,10 +5,10 @@
     "baseline_max" : 500
   },
   "trend" : {
-    "max_shift_year" : 20,
-    "prob_poly_exp_log" : [0.8, 0.1, 0.1],
+    "max_shift_year" : 3,
+    "prob_poly_exp_log" : [1, 0, 0],
     "poly_params" : {
-      "prob_num_degree" : [0.5, 0.4, 0.1],
+      "prob_num_degree" : [0.5, 0.5],
       "multiplicative_coeff_range_ratio" : [-0.01, 0.01]
     },
     "exp_params" : {
@@ -33,7 +33,7 @@
     ],
     "max_number_frequencies" : 3,
     "amplitude_coeff_range_ratio" : [0.1, 0.5],
-    "prob_type_si_tr_sq_sa_sp" : [0.2, 0.2, 0.2, 0.2, 0.2],
+    "prob_type_si_tr_sq_sa" : [0.25, 0.25, 0.25, 0.25],
     "prob_pattern_c_i_d" : [0.8, 0.1, 0.1]
   },
   "noise" : {

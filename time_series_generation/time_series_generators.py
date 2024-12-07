@@ -7,21 +7,32 @@ class TrendType(Enum):
     EXPONENTIAL = "exponential"
     LOGARITHMIC = "logarithmic"
 
-class TimeSeriesAttributes:
-    def __init__(self):
-        self.num_days = None,
-        self.baseline_value = 100,
-        self.trend_change_prob = 0,
-        self.max_trend_slope = 0.5,
-        self.allow_seasonality = False,
-        self.seasonality_intervals = None,
-        self.seasonality_frequencies = None,
-        self.seasonality_amplitude_pattern = None,
-        self.seasonality_base_amplitude = None,
-        self.noise_std = 2,
-        self.inactivity_prob = 0.05,
-        self.spike_prob = 0.02,
-        self.spike_multiplier_range = (1.5, 3.0)
+class SeasonalityType(Enum):
+    SINUSOIDAL = "sinusoidal"
+    TRIANGULAR = "triangular"
+    SQUARE = "square"
+    SAWTOOTH = "sawtooth"
+    SPIKE = "spike"
+
+class SeasonalityAmplitudePattern(Enum):
+    CONSTANT = "constant"
+    INCREASING = "increasing"
+    DECREASING = "decreasing"
+
+class TrendAttributes:
+    def __init__(self, trend_interval : tuple[int, int], trend_type : TrendType, trend_params : dict):
+        self.trend_interval = trend_interval
+        self.trend_type = trend_type
+        self.trend_params = trend_params
+
+
+class SeasonalityAttributes:
+    def __init__(self, seasonality_frequency : int, seasonality_intervals : list, seasonality_type : SeasonalityType, seasonality_base_amplitude : float, seasonality_amplitude_pattern : SeasonalityAmplitudePattern):
+        self.seasonality_intervals = seasonality_intervals,
+        self.seasonality_frequency = seasonality_frequency,
+        self.seasonality_type = seasonality_type,
+        self.seasonality_base_amplitude = seasonality_base_amplitude,
+        self.seasonality_amplitude_pattern = seasonality_amplitude_pattern
 
 
 
@@ -36,21 +47,22 @@ class TimeSeriesGenerator:
         self.ts = np.full(num_units, baseline_value, dtype=float)
         return self
 
-    def build_trend(self, trend_change_points_list, trend_type_list, trend_params_list):
+    def build_trend(self, trend_attributes_list):
         ''' Build the trend component of the time series '''
         # Trend with changes
         if self.ts is None:
             raise ValueError('Time series baseline has not been built')
 
-        trend = np.array([])
+        ts_length = self.ts.size
+        trend = np.zeros(ts_length)
 
         # Build the trend iteratively for each trend period (defined by the change point list)
-        for i in range(len(trend_change_points_list) - 1):
-            range_length = trend_change_points_list[i+1] - trend_change_points_list[i]
-            t = np.arange(range_length)
-            trend_piece = np.zeros(range_length)
-            trend_type = trend_type_list[i]
-            trend_params = trend_params_list[i]
+        for trend_attributes in trend_attributes_list:
+            a, b = trend_attributes.trend_interval[0], trend_attributes.trend_interval[1]
+            t = np.arange(b - a)
+            trend_p = np.zeros(ts_length)
+            trend_type = trend_attributes.trend_type
+            trend_params = trend_attributes.trend_params
             if trend_type == TrendType.POLYNOMIAL:
                 # Polynomial trend
                 coefficients = trend_params.get('coefficients', [0.01, -0.1, 2])
@@ -67,128 +79,97 @@ class TimeSeriesGenerator:
                 trend_piece = a * np.log(t + 1) + c
             else:
                 raise ValueError('Trend type not supported')
-            trend = np.concatenate((trend, trend_piece))
-        if trend.size != self.ts.size:
+            trend_p[a:b] = trend_piece
+            trend = trend + trend_p
+        if trend.size != ts_length:
             raise ValueError('Trend size does not match')
         self.ts = self.ts + trend
         return self
 
-    def build_seasonality(self, seasonality_params):
+    def build_seasonality(self, seasonality_attributes_list):
         ''' Build the seasonal component of the time series '''
         # Trend with changes
         if self.ts is None:
             raise ValueError('Time series baseline has not been built')
 
-        '''
-        seasonality_params = [{"seasonality"},...]
-        '''
 
-        '''    # Handle seasonality intervals
-        if seasonality_intervals_list is None:
-            seasonality_intervals_list = [(0, self.ts.size)]  # Entire time series
-        for start, end in seasonality_intervals_list:
-            for freq in seasonality_frequencies_list:
-                # Calculate amplitude pattern
-                if seasonality_amplitude_pattern == 'constant':
-                    amplitude = seasonality_base_amplitude
-                elif seasonality_amplitude_pattern == 'increasing':
-                    amplitude = np.linspace(0, seasonality_base_amplitude, end - start)
-                elif seasonality_amplitude_pattern == 'decreasing':
-                    amplitude = np.linspace(seasonality_base_amplitude, 0, end - start)
-                elif seasonality_amplitude_pattern == 'wave':
-                    amplitude = seasonality_base_amplitude * (
-                            1 + np.sin(2 * np.pi * np.arange(end - start) / (2 * (end - start)))
-                    )
+        ts_length = self.ts.size
+        seasonality = np.zeros(ts_length)
 
-                # Generate seasonality for the interval
-                seasonal_component = amplitude * np.sin(2 * np.pi * np.arange(start, end) / freq)
+        for seasonality_attributes in seasonality_attributes_list:
+
+            freq = seasonality_attributes.seasonality_frequency
+            type = seasonality_attributes.seasonality_type
+            base_amplitude = seasonality_attributes.seasonality_base_amplitude
+            amplitude_pattern = seasonality_attributes.seasonality_amplitude_pattern
+            seasonality_intervals = seasonality_attributes.seasonality_intervals
+
+            # Handle seasonality intervals
+            if len(seasonality_intervals) == 0:
+                seasonality_intervals = [(0, self.ts.size)]  # Entire time series
+            for start, end in seasonality_intervals:
+                # Define seasonality amplitude
+                if amplitude_pattern == SeasonalityAmplitudePattern.CONSTANT:
+                    amplitude = base_amplitude
+                elif amplitude_pattern == SeasonalityAmplitudePattern.INCREASING:
+                    amplitude = np.linspace(0, base_amplitude, end - start)
+                elif amplitude_pattern == SeasonalityAmplitudePattern.DECREASING:
+                    amplitude = np.linspace(base_amplitude, 0, end - start)
+                else:
+                    raise ValueError('Amplitude pattern not supported')
+
+                # Define seasonality type
+                if type == SeasonalityType.SINUSOIDAL:
+                    seasonal_component = amplitude * np.sin(2 * np.pi * np.arange(start, end) / freq)
+                elif type == SeasonalityType.TRIANGULAR:
+                    seasonal_component = amplitude * np.abs(1 - 2 * (np.arange(start, end) % freq) / freq)
+                elif type == SeasonalityType.SQUARE:
+                    seasonal_component = amplitude * np.sign(np.sin(2 * np.pi * np.arange(start, end) / freq))
+                elif type == SeasonalityType.SAWTOOTH:
+                    seasonal_component = amplitude * ((np.arange(start, end) % freq) / freq)
+                elif type == SeasonalityType.SPIKE:
+                    spike_days = [0, int(freq / 2)]  # Spikes at start and midpoint of the period
+                    seasonal_component = amplitude if (np.arange(start, end) % freq) in spike_days else 0
+                else:
+                    raise ValueError(f"Unknown seasonality type: {type}")
                 seasonality[start:end] += seasonal_component
+        self.ts = self.ts + seasonality
+        return self
 
-        return self'''
+    def build_noise(self, noise_std):
+        """Build the noise component of the time series """
+        # Noise
+        noise = np.random.normal(0, noise_std, self.ts.size)
+        self.ts = self.ts + noise
+        return self
 
-def generate_energy_series_v3(
-        num_days=365,
-        daily_baseline=100,
-        trend_change_prob=0.1,
-        max_trend_slope=0.5,
-        allow_seasonality=True,
-        seasonality_intervals=None,  # Intervals where seasonality is present
-        seasonality_frequencies=[7],  # List of frequencies (e.g., 7 days, 30 days)
-        seasonality_amplitude_pattern='constant',  # Options: 'constant', 'increasing', 'decreasing', 'wave'
-        seasonality_base_amplitude=10,
-        noise_std=2,
-        inactivity_prob=0.05,
-        spike_prob=0.02,
-        spike_multiplier_range=(1.5, 3.0)
-):
-    """
-    Generate simulated daily energy consumption with advanced seasonal behaviors.
-    """
-    # Time index
-    t = np.arange(num_days)
+    def build_inactivity(self, inactivity_prob):
+        ''' Build the inactivity component of the time series '''
+        # Simulate inactivity (set energy to zero randomly)
+        for i in range(self.ts.size):
+            if np.random.rand() < inactivity_prob:
+                self.ts[i] = 0
+        return self
 
-    # Baseline
-    baseline = np.full(num_days, daily_baseline, dtype=float)
+    def build_spikes(self, spike_prob, spike_multiplier_range, baseline):
+        ''' Build the spike component of the time series '''
 
-    # Trend with changes
-    trend = np.zeros(num_days)
-    current_slope = np.random.uniform(-max_trend_slope, max_trend_slope)
-    for i in range(1, num_days):
-        if np.random.rand() < trend_change_prob:  # Change trend slope
-            current_slope = np.random.uniform(-max_trend_slope, max_trend_slope)
-        trend[i] = trend[i - 1] + current_slope
+        # Add spikes
+        for i in range(self.ts.size):
+            if np.random.rand() < spike_prob:
+                spike_multiplier = np.random.uniform(*spike_multiplier_range)
+                self.ts[i] += spike_multiplier * baseline
+        return self
 
-    # Seasonality
-    seasonality = np.zeros(num_days)
-    if allow_seasonality:
-        # Handle seasonality intervals
-        if seasonality_intervals is None:
-            seasonality_intervals = [(0, num_days)]  # Entire time series
-        for start, end in seasonality_intervals:
-            for freq in seasonality_frequencies:
-                # Calculate amplitude pattern
-                if seasonality_amplitude_pattern == 'constant':
-                    amplitude = seasonality_base_amplitude
-                elif seasonality_amplitude_pattern == 'increasing':
-                    amplitude = np.linspace(0, seasonality_base_amplitude, end - start)
-                elif seasonality_amplitude_pattern == 'decreasing':
-                    amplitude = np.linspace(seasonality_base_amplitude, 0, end - start)
-                elif seasonality_amplitude_pattern == 'wave':
-                    amplitude = seasonality_base_amplitude * (
-                            1 + np.sin(2 * np.pi * np.arange(end - start) / (2 * (end - start)))
-                    )
+    def build_max(self):
+        ''' Saturate to 0 the time series values '''
+        self.ts = np.maximum(self.ts, 0)
+        return self
 
-                # Generate seasonality for the interval
-                seasonal_component = amplitude * np.sin(2 * np.pi * np.arange(start, end) / freq)
-                seasonality[start:end] += seasonal_component
+    def generate(self):
+        return self.ts
 
-    # Noise
-    noise = np.random.normal(0, noise_std, num_days)
 
-    # Combine components (baseline, trend, seasonality, noise)
-    energy_consumption = baseline + trend + seasonality + noise
-
-    # Simulate inactivity (set energy to zero randomly)
-    for i in range(num_days):
-        if np.random.rand() < inactivity_prob:
-            energy_consumption[i] = 0
-
-    # Add spikes
-    for i in range(num_days):
-        if np.random.rand() < spike_prob:
-            spike_multiplier = np.random.uniform(*spike_multiplier_range)
-            energy_consumption[i] += spike_multiplier * daily_baseline
-
-    # Ensure non-negative values
-    energy_consumption = np.maximum(energy_consumption, 0)
-
-    # Create a pandas DataFrame
-    data = pd.DataFrame({
-        'day': t,
-        'energy_consumption': energy_consumption
-    })
-
-    return data
 
 
 # Example: Generate and visualize advanced seasonal behaviors

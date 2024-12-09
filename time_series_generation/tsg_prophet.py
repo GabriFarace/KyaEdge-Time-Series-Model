@@ -3,40 +3,15 @@ import numpy as np
 from enum import Enum
 
 
-class TrendType(Enum):
-    POLYNOMIAL = "polynomial"
-    EXPONENTIAL = "exponential"
-    LOGARITHMIC = "logarithmic"
-
-class SeasonalityType(Enum):
-    SINUSOIDAL = "sinusoidal"
-    TRIANGULAR = "triangular"
-    SQUARE = "square"
-    SAWTOOTH = "sawtooth"
-
-class SeasonalityAmplitudePattern(Enum):
-    CONSTANT = "constant"
-    INCREASING = "increasing"
-    DECREASING = "decreasing"
-
-class TrendAttributes:
-    def __init__(self, trend_interval : tuple[int, int], trend_type : TrendType, trend_params : dict):
-        self.trend_interval = trend_interval
-        self.trend_type = trend_type
-        self.trend_params = trend_params
 
 
-class SeasonalityAttributes:
-    def __init__(self, seasonality_frequency : int, seasonality_intervals : list[tuple[int, int]], seasonality_type : SeasonalityType, seasonality_base_amplitude : float, seasonality_amplitude_pattern : SeasonalityAmplitudePattern):
-        self.seasonality_intervals = seasonality_intervals
+class SeasonalityAttributesProphet:
+    def __init__(self, seasonality_frequency : int, seasonality_base_amplitude : float, coefficients):
         self.seasonality_frequency = seasonality_frequency
-        self.seasonality_type = seasonality_type
         self.seasonality_base_amplitude = seasonality_base_amplitude
-        self.seasonality_amplitude_pattern = seasonality_amplitude_pattern
 
 
-
-class TimeSeriesGenerator:
+class TimeSeriesGeneratorProphet:
     ''' Builder of time series using a component approach'''
     def __init__(self):
         self.ts = None
@@ -44,10 +19,10 @@ class TimeSeriesGenerator:
     def build_baseline(self, num_units : int, baseline_value : float):
         ''' Build the baseline component of the time series'''
         # Baseline
-        self.ts = np.full(num_units, baseline_value, dtype=float)
+        self.ts = np.full(num_units, 0., dtype=float)
         return self
 
-    def build_trend(self, trend_attributes_list : list[TrendAttributes]):
+    def build_trend(self, trend_intervals, trend_changes, k_base, m_base):
         ''' Build the trend component of the time series '''
         # Trend with changes
         if self.ts is None:
@@ -57,28 +32,15 @@ class TimeSeriesGenerator:
         trend = np.zeros(ts_length)
 
         # Build the trend iteratively for each trend period (defined by the change point list)
-        for trend_attributes in trend_attributes_list:
-            min_a, min_b = trend_attributes.trend_interval[0], trend_attributes.trend_interval[1]
+        for i,trend_interval in enumerate(trend_intervals):
+            min_a, min_b = trend_interval[0], trend_interval[1]
             t = np.arange(min_b - min_a)
             trend_p = np.zeros(ts_length)
-            trend_type = trend_attributes.trend_type
-            trend_params = trend_attributes.trend_params
-            if trend_type == TrendType.POLYNOMIAL:
-                # Polynomial trend
-                coefficients = trend_params.get('coefficients', [0.01, -0.1, 2])
-                trend_piece = np.polyval(coefficients, t)
-            elif trend_type == TrendType.EXPONENTIAL:
-                # Exponential trend
-                a = trend_params.get('a', 1)
-                b = trend_params.get('b', 0.01)
-                trend_piece = a * np.exp(b * t)
-            elif trend_type == TrendType.LOGARITHMIC:
-                # Logarithmic trend
-                a = trend_params.get('a', 10)
-                c = trend_params.get('c', 1)
-                trend_piece = a * np.log(t + 1) + c
-            else:
-                raise ValueError('Trend type not supported')
+
+            # Polynomial trend
+            coefficients = [k_base + trend_changes[i], m_base - k_base * min_a]
+            trend_piece = np.polyval(coefficients, t)
+
             trend_p[min_a:min_b] = trend_piece
             trend = trend + trend_p
         if trend.size != ts_length:
@@ -86,7 +48,7 @@ class TimeSeriesGenerator:
         self.ts = self.ts + trend
         return self
 
-    def build_seasonality(self, seasonality_attributes_list : list[SeasonalityAttributes]):
+    def build_seasonality(self, seasonality_attributes_list : list[SeasonalityAttributesProphet]):
         ''' Build the seasonal component of the time series '''
         # Trend with changes
         if self.ts is None:
@@ -99,22 +61,10 @@ class TimeSeriesGenerator:
         for seasonality_attributes in seasonality_attributes_list:
 
             freq = seasonality_attributes.seasonality_frequency
-            type = seasonality_attributes.seasonality_type
             base_amplitude = seasonality_attributes.seasonality_base_amplitude
-            amplitude_pattern = seasonality_attributes.seasonality_amplitude_pattern
-            seasonality_intervals = seasonality_attributes.seasonality_intervals
 
             # Handle seasonality intervals
             for start, end in seasonality_intervals:
-                # Define seasonality amplitude
-                if amplitude_pattern == SeasonalityAmplitudePattern.CONSTANT:
-                    amplitude = base_amplitude
-                elif amplitude_pattern == SeasonalityAmplitudePattern.INCREASING:
-                    amplitude = np.linspace(0., base_amplitude, end - start)
-                elif amplitude_pattern == SeasonalityAmplitudePattern.DECREASING:
-                    amplitude = np.linspace(base_amplitude, 0., end - start)
-                else:
-                    raise ValueError('Amplitude pattern not supported')
 
                 # Define seasonality type
                 if type == SeasonalityType.SINUSOIDAL:
@@ -179,8 +129,8 @@ class TimeSeriesFlags:
         self.max = max
 
 
-class TimeSeriesDirector:
-    def __init__(self, time_series_generator: TimeSeriesGenerator, logger : Logger, config: dict):
+class TimeSeriesDirectorProphet:
+    def __init__(self, time_series_generator: TimeSeriesGeneratorProphet, logger : Logger, config: dict):
         self.time_series_generator = time_series_generator
         self.config = config
         self.logger = logger
@@ -367,7 +317,5 @@ class TimeSeriesDirector:
 
         # Add max
         self.time_series_generator.build_max()
-
-
 
 

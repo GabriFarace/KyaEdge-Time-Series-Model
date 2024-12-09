@@ -24,7 +24,7 @@ def generate_ts_main():
     finish = False
     while not finish:
         logger.info("Generating time series")
-        tsd.make_ts_conditional(TimeSeriesFlags(True, True, True, True, True, False))
+        tsd.make_ts_conditional(TimeSeriesFlags(True, True, False, False, False, False))
         time_series = tsg.generate()
 
         plt.figure(figsize=(12, 6))

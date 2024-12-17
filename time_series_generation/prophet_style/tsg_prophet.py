@@ -1,7 +1,14 @@
 from logging import Logger
 import numpy as np
-from time_series_generation.mine.time_series_generators import TimeSeriesFlags
 
+class TimeSeriesFlags:
+    def __init__(self, trend : bool, seasonal : bool, noise : bool, spike : bool, inactivity : bool,  max : bool):
+        self.trend = trend
+        self.seasonal = seasonal
+        self.noise = noise
+        self.spikes = spike
+        self.inactivity = inactivity
+        self.max = max
 
 class SeasonalityAttributesProphet:
     def __init__(self, seasonality_frequency : int, paramaters_number : int, coefficients : list[tuple[float, float]]):
@@ -129,12 +136,11 @@ class TimeSeriesDirectorProphet:
         ''' Generate the parameters for the trend component using the configuration file'''
         trend_config = self.config["trend"]
         num_shifts = np.sum(np.random.choice(np.arange(1,trend_config["max_shift_year"] + 1), num_units // 365) )
-        change_points = np.random.choice(np.arange(1, num_units + 1), num_shifts, replace=False)
+        change_points = np.random.choice(np.arange(1, num_units), num_shifts, replace=False)
         change_points = np.sort(change_points)
-        change_points[0] = 0
-        change_points[-1] = num_units
+        change_points = np.concatenate(([0], change_points, [num_units]))
         trend_intervals = [(int(change_points[i]), int(change_points[i + 1])) for i in range(change_points.size - 1)]
-        m_base = baseline_value
+        m_base = 0
         trend_changes = []
         self.logger.info("\n\n TREND")
         self.logger.info(f"Trend : Number of shifts ->{num_shifts}")
@@ -146,7 +152,7 @@ class TimeSeriesDirectorProphet:
             current_rate = interval_rate
             if i == 0:
                 self.logger.info(
-                    f"Trend : Base Rate -> {interval_rate}, Base Value -> {m_base}, Value change -> {value_change}")
+                    f"Trend : Base k Rate -> {interval_rate}, Base m -> {m_base}, Value change -> {value_change}")
             else:
                 self.logger.info(
                     f"Trend : Interval -> {trend_interval}, Rate change -> {trend_change}, Value change -> {value_change}")
@@ -214,7 +220,7 @@ class TimeSeriesDirectorProphet:
 
         # Build the baseline
         num_units, baseline_value = self._baseline_parameters_generation()
-        self.time_series_generator.build_baseline(num_units, 0.)
+        self.time_series_generator.build_baseline(num_units, baseline_value)
 
         # Build the trend
         self.time_series_generator.build_trend(*self._trend_parameters_generation(num_units, baseline_value))
@@ -241,7 +247,7 @@ class TimeSeriesDirectorProphet:
 
         # Build the baseline
         num_units, baseline_value = self._baseline_parameters_generation()
-        self.time_series_generator.build_baseline(num_units, 0.)
+        self.time_series_generator.build_baseline(num_units, baseline_value)
 
         # Build the trend
         if ts_flags.trend:

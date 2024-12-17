@@ -34,7 +34,9 @@ with st.form("Time Series Generation Parameters"):
             "seasonality": False,
             "noise": False,
             "holidays": False,
-            "inactivity" : False
+            "inactivity" : False,
+            "sum_constraint" : False,
+            "interval_constraint" : False,
         }
 
     if "frequencies" not in st.session_state:
@@ -63,12 +65,20 @@ with st.form("Time Series Generation Parameters"):
         st.session_state["components"]["inactivity"] = st.checkbox(
             "Enable Inactivity", value=st.session_state["components"]["inactivity"]
         )
+        st.session_state["components"]["interval_constraint"] = st.checkbox(
+            "Enable Interval Constraint", value=st.session_state["components"]["interval_constraint"]
+        )
+        st.session_state["components"]["sum_constraint"] = st.checkbox(
+            "Enable Sum Constraint", value=st.session_state["components"]["sum_constraint"]
+        )
 
     with st.expander("Baseline Component Settings"):
         max_years = st.number_input("Maximum Number of Years", value=20)
         baseline_min = st.number_input("Minimum baseline value", value=10)
         baseline_max = st.number_input("Maximum baseline value", value=500)
-
+        unit_is_energy = st.checkbox(
+            "Unit is Energy", value=True
+        )
 
     with st.expander("Trend Component Settings"):
         max_shift_year = st.number_input(
@@ -124,16 +134,23 @@ with st.form("Time Series Generation Parameters"):
             "Maximum value of windows per holiday", value=3
         )
 
+    with st.expander("Inactivity Component Settings"):
+        inactivity_max_prob = st.number_input(
+            "Maximum probability value of inactivity (0)", value=0.01
+        )
+
 
     # Submit button
     submitted = st.form_submit_button("Generate")
 
 # Step 3: Generate Time Series Upon Submission
 if submitted:
+    print("\n\n")
     # Update Configurations
-    config.baseline["n_years"] = max_years
+    config.baseline["n_years_max"] = max_years
     config.baseline["baseline_min"] = baseline_min
     config.baseline["baseline_max"] = baseline_max
+    config.baseline["unit_is_energy"] = unit_is_energy
     config.trend["max_shift_year"] = max_shift_year
     config.trend["value_change_ratio"] = value_change_ratio
     config.noise["std_max"] = noise_std_max
@@ -141,6 +158,7 @@ if submitted:
     config.holidays["holidays_max_window"] = max_window
     config.holidays["std_max"] = holiday_std_max
     config.seasonal["frequencies"] = f
+    config.inactivity["max_prob"] = inactivity_max_prob
 
     # Make the time series with the director
     time_series = tsd.make_ts_conditional(
@@ -149,7 +167,9 @@ if submitted:
             st.session_state["components"]["seasonality"],
             st.session_state["components"]["noise"],
             st.session_state["components"]["holidays"],
-            st.session_state["components"]["inactivity"]
+            st.session_state["components"]["inactivity"],
+            st.session_state["components"]["interval_constraint"],
+            st.session_state["components"]["sum_constraint"]
         )
     )
 

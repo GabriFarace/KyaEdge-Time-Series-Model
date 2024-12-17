@@ -2,7 +2,8 @@
   "baseline" : {
     "n_years_max" : 20,
     "baseline_min" : 10,
-    "baseline_max" : 500
+    "baseline_max" : 500,
+    "unit_is_energy": true
   },
   "trend" : {
     "max_shift_year" : 3,
@@ -23,5 +24,8 @@
     "max_number_of_holidays_year" : 5,
     "holidays_max_window" : 3,
     "std_max" : 1
+  },
+  "inactivity" : {
+    "max_prob" : 0.01
   }
 }

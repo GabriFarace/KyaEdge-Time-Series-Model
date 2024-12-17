@@ -10,7 +10,7 @@ def generate_ts_main():
 
     finish = False
     while not finish:
-        time_series = tsd.make_ts_conditional(TimeSeriesFlags(True, False, True, True, True))
+        time_series = tsd.make_ts_conditional(TimeSeriesFlags(True, False, True, True, True, False, False))
 
         plt.figure(figsize=(12, 6))
         plt.plot(time_series, label="Generated Time Series Prophet style")

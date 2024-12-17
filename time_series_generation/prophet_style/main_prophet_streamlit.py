@@ -1,6 +1,5 @@
 import logging
-from tsg_prophet import TimeSeriesDirectorProphet, TimeSeriesGeneratorProphet, TimeSeriesFlags
-import json
+from tsg_prophet import TimeSeriesDirectorProphet, TimeSeriesGeneratorProphet, TimeSeriesFlags, ParametersGenerationConfigs
 import matplotlib.pyplot as plt
 import streamlit as st
 
@@ -10,30 +9,18 @@ import streamlit as st
     # ODO add the possibility of specifying the holidays
 
 
-
 # Step 1: Fixed Instances (using caching)
 @st.cache_resource
 def initialize_time_series_objects():
-    # Configure the logger
-    logging.basicConfig(
-        level=logging.INFO,  # Set the logging level
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # Format for log messages
-        datefmt='%Y-%m-%d %H:%M:%S'  # Format for timestamps
-    )
-    logger = logging.getLogger("ProphetLogger")
 
-    # Load configuration file
-    with open("tsg_config_prophet.json", "r") as config_file:
-        config = json.load(config_file)
-
+    config = ParametersGenerationConfigs()
     # Initialize Time Series Generator and Director
-    tsg = TimeSeriesGeneratorProphet()
-    tsd = TimeSeriesDirectorProphet(tsg, logger, config)
+    tsd = TimeSeriesDirectorProphet(TimeSeriesGeneratorProphet(), config)
 
-    return tsg, tsd, logger
+    return tsd, config
 
 # Retrieve cached instances
-tsg, tsd, logger = initialize_time_series_objects()
+tsd, config = initialize_time_series_objects()
 
 # Step 2: Streamlit UI
 st.title("Time Series Generator")
@@ -47,7 +34,7 @@ with st.form("Time Series Generation Parameters"):
             "seasonality": False,
             "noise": False,
             "holidays": False,
-            "max" : False
+            "inactivity" : False
         }
 
     if "frequencies" not in st.session_state:
@@ -73,8 +60,8 @@ with st.form("Time Series Generation Parameters"):
         st.session_state["components"]["holidays"] = st.checkbox(
             "Enable Holidays", value=st.session_state["components"]["holidays"]
         )
-        st.session_state["components"]["max"] = st.checkbox(
-            "Enable Max", value=st.session_state["components"]["max"]
+        st.session_state["components"]["inactivity"] = st.checkbox(
+            "Enable Inactivity", value=st.session_state["components"]["inactivity"]
         )
 
     with st.expander("Baseline Component Settings"):
@@ -143,44 +130,28 @@ with st.form("Time Series Generation Parameters"):
 
 # Step 3: Generate Time Series Upon Submission
 if submitted:
+    # Update Configurations
+    config.baseline["n_years"] = max_years
+    config.baseline["baseline_min"] = baseline_min
+    config.baseline["baseline_max"] = baseline_max
+    config.trend["max_shift_year"] = max_shift_year
+    config.trend["value_change_ratio"] = value_change_ratio
+    config.noise["std_max"] = noise_std_max
+    config.holidays["max_number_of_holidays_year"] = max_holidays
+    config.holidays["holidays_max_window"] = max_window
+    config.holidays["std_max"] = holiday_std_max
+    config.seasonal["frequencies"] = f
 
-
-    logger.info("Generating time series with user parameters...")
-    new_config = {
-              "baseline" : {
-                "n_years_max" : max_years,
-                "baseline_min" : baseline_min,
-                "baseline_max" : baseline_max
-              },
-              "trend" : {
-                "max_shift_year" : max_shift_year,
-                "value_change_ratio" : value_change_ratio
-              },
-              "seasonal" : {
-                "frequencies" : f
-              },
-              "noise" : {
-                "std_max" : noise_std_max
-              },
-              "holidays" : {
-                "max_number_of_holidays_year" : max_holidays,
-                "holidays_max_window" : max_window,
-                "std_max" : holiday_std_max
-              }
-            }
-
-    tsd.set_config(new_config)
-    tsd.make_ts_conditional(
+    # Make the time series with the director
+    time_series = tsd.make_ts_conditional(
         TimeSeriesFlags(
             st.session_state["components"]["trend"],
             st.session_state["components"]["seasonality"],
             st.session_state["components"]["noise"],
             st.session_state["components"]["holidays"],
-            False,
-            st.session_state["components"]["max"],
+            st.session_state["components"]["inactivity"]
         )
     )
-    time_series = tsg.generate()
 
     # Step 4: Plot the generated time series
     fig, ax = plt.subplots()
@@ -192,5 +163,9 @@ if submitted:
 
     # Display plot
     st.pyplot(fig)
+
+
+
+
     #cd time_series_generation/prophet_style
     #streamlit run main_prophet_streamlit.py

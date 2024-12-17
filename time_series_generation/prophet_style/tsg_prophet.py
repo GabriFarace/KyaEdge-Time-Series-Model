@@ -1,20 +1,41 @@
-from logging import Logger
+import logging
 import numpy as np
+import json
+
+# Configure the logger
+logging.basicConfig(
+    level=logging.INFO,  # Set the logging level
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # Format for log messages
+    datefmt='%Y-%m-%d %H:%M:%S'  # Format for timestamps
+)
+logger = logging.getLogger("ProphetLogger")
 
 class TimeSeriesFlags:
-    def __init__(self, trend : bool, seasonal : bool, noise : bool, spike : bool, inactivity : bool,  max : bool):
+    def __init__(self, trend : bool, seasonal : bool, noise : bool, holidays : bool, inactivity : bool):
         self.trend = trend
         self.seasonal = seasonal
         self.noise = noise
-        self.spikes = spike
+        self.holidays = holidays
         self.inactivity = inactivity
-        self.max = max
 
 class SeasonalityAttributesProphet:
     def __init__(self, seasonality_frequency : int, paramaters_number : int, coefficients : list[tuple[float, float]]):
         self.seasonality_frequency = seasonality_frequency
         self.parameters_number = paramaters_number
         self.coefficients = coefficients
+
+
+class ParametersGenerationConfigs:
+
+    def __init__(self):
+        # Load configuration file
+        with open("tsg_config_prophet.json", "r") as config_file:
+            config = json.load(config_file)
+        self.baseline = config["baseline"]
+        self.trend = config["trend"]
+        self.seasonal = config["seasonal"]
+        self.noise = config["noise"]
+        self.holidays = config["holidays"]
 
 
 class TimeSeriesGeneratorProphet:
@@ -102,7 +123,7 @@ class TimeSeriesGeneratorProphet:
         self.ts += holidays
         return self
 
-    def build_max(self):
+    def build_min(self):
         ''' Saturate to 0 the time series values '''
         self.ts = np.maximum(self.ts, 0)
         return self
@@ -115,26 +136,23 @@ class TimeSeriesGeneratorProphet:
         return self
 
 
-
-
 class TimeSeriesDirectorProphet:
-    def __init__(self, time_series_generator: TimeSeriesGeneratorProphet, logger : Logger, config: dict):
+    def __init__(self, time_series_generator: TimeSeriesGeneratorProphet, config: ParametersGenerationConfigs):
         self.time_series_generator = time_series_generator
         self.config = config
-        self.logger = logger
 
     def _baseline_parameters_generation(self):
         ''' Generate the parameters for the baseline component using the configuration file'''
-        baseline_config = self.config["baseline"]
+        baseline_config = self.config.baseline
         num_units = np.random.choice(np.arange(1, baseline_config["n_years_max"] + 1)) * 365
         baseline_value = np.random.uniform(baseline_config["baseline_min"], baseline_config["baseline_max"])
-        self.logger.info("Baseline")
-        self.logger.info(f"Baseline : Units -> {num_units}, Baseline Value -> {baseline_value}")
+        logger.info("Baseline")
+        logger.info(f"Baseline : Units -> {num_units}, Baseline Value -> {baseline_value}")
         return num_units, baseline_value
 
     def _trend_parameters_generation(self, num_units, baseline_value):
         ''' Generate the parameters for the trend component using the configuration file'''
-        trend_config = self.config["trend"]
+        trend_config = self.config.trend
         num_shifts = np.sum(np.random.choice(np.arange(1,trend_config["max_shift_year"] + 1), num_units // 365) )
         change_points = np.random.choice(np.arange(1, num_units), num_shifts, replace=False)
         change_points = np.sort(change_points)
@@ -142,8 +160,8 @@ class TimeSeriesDirectorProphet:
         trend_intervals = [(int(change_points[i]), int(change_points[i + 1])) for i in range(change_points.size - 1)]
         m_base = 0
         trend_changes = []
-        self.logger.info("\n\n TREND")
-        self.logger.info(f"Trend : Number of shifts ->{num_shifts}")
+        logger.info("\n\n TREND")
+        logger.info(f"Trend : Number of shifts ->{num_shifts}")
         current_rate = 0
         for i, trend_interval in enumerate(trend_intervals):
             value_change = np.random.uniform(- trend_config["value_change_ratio"], trend_config["value_change_ratio"]) * baseline_value
@@ -151,20 +169,20 @@ class TimeSeriesDirectorProphet:
             trend_change = interval_rate - current_rate
             current_rate = interval_rate
             if i == 0:
-                self.logger.info(
+                logger.info(
                     f"Trend : Base k Rate -> {interval_rate}, Base m -> {m_base}, Value change -> {value_change}")
             else:
-                self.logger.info(
+                logger.info(
                     f"Trend : Interval -> {trend_interval}, Rate change -> {trend_change}, Value change -> {value_change}")
             trend_changes.append(trend_change)
         return trend_intervals, trend_changes, m_base
 
     def _seasonal_parameters_generation(self, baseline_value):
         ''' Generate the parameters for the seasonal component using the configuration file'''
-        seasonal_config = self.config["seasonal"]
+        seasonal_config = self.config.seasonal
         seasonality_attributes_list = []
         frequencies = seasonal_config["frequencies"]
-        self.logger.info("\n\n SEASONALITY")
+        logger.info("\n\n SEASONALITY")
         for seasonality_frequency in frequencies:
             if np.random.choice([True, False], p=[seasonality_frequency["prob"],1 - seasonality_frequency["prob"]]):
                 frequency = seasonality_frequency["value"]
@@ -174,25 +192,25 @@ class TimeSeriesDirectorProphet:
                     a = np.random.normal(0, seasonality_frequency["coeff_ratio_std"] * baseline_value)
                     b = np.random.normal(0, seasonality_frequency["coeff_ratio_std"] * baseline_value)
                     coefficients.append((a, b))
-                self.logger.info(
+                logger.info(
                     f"Seasonality : Frequency -> {frequency}, N -> {parameters_number} , Coefficients -> {coefficients}")
                 seasonality_attributes_list.append(SeasonalityAttributesProphet(frequency, parameters_number, coefficients))
         return seasonality_attributes_list
 
     def _noise_parameters_generation(self, baseline_value):
         ''' Generate the parameters for the noise component using the configuration file'''
-        noise_config = self.config["noise"]
+        noise_config = self.config.noise
         noise_std = np.random.uniform(0, noise_config["std_max"]) * baseline_value
-        self.logger.info("\n\n NOISE")
-        self.logger.info(f"Noise : Standard Deviation -> {noise_std}")
+        logger.info("\n\n NOISE")
+        logger.info(f"Noise : Standard Deviation -> {noise_std}")
         return noise_std
 
     def _holidays_parameters_generation(self, num_units, baseline_value):
         ''' Generate the parameters for the holidays component using the configuration file'''
-        holidays_config = self.config["holidays"]
+        holidays_config = self.config.holidays
         holidays_std = np.random.uniform(0, holidays_config["std_max"]) * baseline_value
-        self.logger.info("\n\n HOLIDAYS")
-        self.logger.info(f"Holidays : Standard Deviation -> {holidays_std}")
+        logger.info("\n\n HOLIDAYS")
+        logger.info(f"Holidays : Standard Deviation -> {holidays_std}")
         holidays_per_year = np.random.choice(np.arange(0, holidays_config["max_number_of_holidays_year"] + 1))
         holidays_windows = np.random.choice(np.arange(1, holidays_config["holidays_max_window"] + 1), holidays_per_year)
         holidays_timestamps = [np.random.choice(np.arange(holidays_windows[i], 365 - int(holidays_windows[i]))) for i in range(holidays_per_year)]
@@ -208,10 +226,10 @@ class TimeSeriesDirectorProphet:
                     current += 365
             holiday_intervals = sorted(holiday_intervals)
             holidays_intervals.append(holiday_intervals)
-            self.logger.info(f"Holidays : Interval -> {holiday_intervals}")
+            logger.info(f"Holidays : Interval -> {holiday_intervals}")
         return holidays_intervals, holidays_std
 
-    def make_ts(self, include_max : bool):
+    def make_ts(self, include_min : bool):
         '''
         Use the builder to make the time series with all the components and generating randomly
         the parameters using the configurations
@@ -235,8 +253,10 @@ class TimeSeriesDirectorProphet:
         self.time_series_generator.build_holidays(*self._holidays_parameters_generation(num_units, baseline_value))
 
         # Add max
-        if include_max:
-            self.time_series_generator.build_max()
+        if include_min:
+            self.time_series_generator.build_min()
+
+        return self.time_series_generator.generate()
 
     def make_ts_conditional(self, ts_flags: TimeSeriesFlags):
         '''
@@ -262,14 +282,14 @@ class TimeSeriesDirectorProphet:
             self.time_series_generator.build_noise(self._noise_parameters_generation(baseline_value))
 
         # Build the holidays
-        if ts_flags.spikes:
+        if ts_flags.holidays:
             self.time_series_generator.build_holidays(*self._holidays_parameters_generation(num_units, baseline_value))
-        # Add max
-        if ts_flags.max:
-            self.time_series_generator.build_max()
 
-    def set_config(self, new_config):
-        self.config = new_config
+        self.time_series_generator.build_min()
+
+        return self.time_series_generator.generate()
+
+
 
 
 

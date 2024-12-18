@@ -26,7 +26,6 @@ class SeasonalityAttributesProphet:
         self.parameters_number = paramaters_number
         self.coefficients = coefficients
 
-
 class ParametersGenerationConfigs:
 
     def __init__(self):
@@ -80,11 +79,12 @@ class ParametersGenerationConfigs:
         self.holidays = config["holidays"]
         self.inactivity = config["inactivity"]
 
-
 class TimeSeriesGeneratorProphet:
     ''' Builder of time series using a component approach'''
     def __init__(self):
         self.ts = None
+        self.components = {}
+
 
     def build_baseline(self, num_units : int, baseline_value : float):
         ''' Build the baseline component of the time series'''
@@ -119,6 +119,7 @@ class TimeSeriesGeneratorProphet:
         if trend.size != ts_length:
             raise ValueError('Trend size does not match')
         self.ts = self.ts + trend
+        self.components['trend'] = trend
         return self
 
     def build_seasonality(self, seasonality_attributes_list : list[SeasonalityAttributesProphet]):
@@ -129,7 +130,7 @@ class TimeSeriesGeneratorProphet:
 
 
         ts_length = self.ts.size
-
+        self.components["seasonality"] = {}
         for seasonality_attributes in seasonality_attributes_list:
 
             freq = seasonality_attributes.seasonality_frequency
@@ -141,7 +142,7 @@ class TimeSeriesGeneratorProphet:
                 [coefficients[n][0] * np.cos((2 * np.pi * (n + 1) * t) / freq) + coefficients[n][1] * np.sin((2 * np.pi * (n + 1) * t) / freq)
                  for n in range(parameters_number)], axis=0
             )
-
+            self.components["seasonality"][freq] =  fourier_sum
             self.ts = self.ts + fourier_sum
         return self
 
@@ -149,6 +150,7 @@ class TimeSeriesGeneratorProphet:
         """Build the noise component of the time series """
         # Noise
         noise = np.random.normal(0, noise_std, self.ts.size)
+        self.components['noise'] = noise
         self.ts = self.ts + noise
         return self
 
@@ -163,6 +165,7 @@ class TimeSeriesGeneratorProphet:
             for i,holiday_interval in enumerate(holidays_intervals):
                 if t in holiday_interval:
                     holidays[t] += holidays_prior[i]
+        self.components['holidays'] = holidays
         self.ts += holidays
         return self
 
@@ -196,10 +199,12 @@ class TimeSeriesGeneratorProphet:
     def generate(self):
         return self.ts
 
+    def get_components(self):
+        return self.components
+
     def reset(self):
         self.ts = None
         return self
-
 
 class TimeSeriesDirectorProphet:
     def __init__(self, time_series_generator: TimeSeriesGeneratorProphet, config: ParametersGenerationConfigs):
@@ -351,56 +356,4 @@ class TimeSeriesDirectorProphet:
             self.time_series_generator.build_sum(sum_value)
 
         return self.time_series_generator.generate()
-
-    """
-    def _trend_parameters_generation(self, num_units, baseline_value):
-        ''' Generate the parameters for the trend component using the configuration file'''
-        trend_config = self.config.trend
-        num_shifts = np.sum(np.random.choice(np.arange(1, trend_config["max_shift_year"] + 1), num_units // 365))
-        change_points = np.random.choice(np.arange(1, num_units), num_shifts, replace=False)
-        change_points = np.sort(change_points)
-        change_points = np.concatenate(([0], change_points, [num_units]))
-        trend_intervals = [(int(change_points[i]), int(change_points[i + 1])) for i in range(change_points.size - 1)]
-        m_base = 0
-        trend_changes = []
-        logger.info("\n\n TREND")
-        logger.info(f"Trend : Number of shifts ->{num_shifts}")
-        current_rate = 0
-        for i, trend_interval in enumerate(trend_intervals):
-            value_change = np.random.uniform(- trend_config["value_change_ratio"],
-                                             trend_config["value_change_ratio"]) * baseline_value
-            interval_rate = value_change / (trend_interval[1] - trend_interval[0])
-            trend_change = interval_rate - current_rate
-            current_rate = interval_rate
-            if i == 0:
-                logger.info(
-                    f"Trend : Base k Rate -> {interval_rate}, Base m -> {m_base}, Value change -> {value_change}")
-            else:
-                logger.info(
-                    f"Trend : Interval -> {trend_interval}, Rate change -> {trend_change}, Value change -> {value_change}")
-            trend_changes.append(trend_change)
-        return trend_intervals, trend_changes, m_base
-
-    def _seasonal_parameters_generation(self, baseline_value):
-        ''' Generate the parameters for the seasonal component using the configuration file'''
-        seasonal_config = self.config.seasonal
-        seasonality_attributes_list = []
-        frequencies = seasonal_config["frequencies"]
-        logger.info("\n\n SEASONALITY")
-        for seasonality_frequency in frequencies:
-            if np.random.choice([True, False], p=[seasonality_frequency["prob"], 1 - seasonality_frequency["prob"]]):
-                frequency = seasonality_frequency["value"]
-                parameters_number = seasonality_frequency["params_number"]
-                coefficients = []
-                for i in range(parameters_number):
-                    a = np.random.normal(0, seasonality_frequency["coeff_ratio_std"] * baseline_value)
-                    b = np.random.normal(0, seasonality_frequency["coeff_ratio_std"] * baseline_value)
-                    coefficients.append((a, b))
-                logger.info(
-                    f"Seasonality : Frequency -> {frequency}, N -> {parameters_number} , Coefficients -> {coefficients}")
-                seasonality_attributes_list.append(
-                    SeasonalityAttributesProphet(frequency, parameters_number, coefficients))
-        return seasonality_attributes_list
-
-    """
 

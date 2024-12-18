@@ -204,6 +204,7 @@ class TimeSeriesGeneratorProphet:
 
     def reset(self):
         self.ts = None
+        self.components = {}
         return self
 
 class TimeSeriesDirectorProphet:

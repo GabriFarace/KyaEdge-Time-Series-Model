@@ -142,7 +142,7 @@ class TimeSeriesGeneratorProphet:
                 [coefficients[n][0] * np.cos((2 * np.pi * (n + 1) * t) / freq) + coefficients[n][1] * np.sin((2 * np.pi * (n + 1) * t) / freq)
                  for n in range(parameters_number)], axis=0
             )
-            self.components["seasonality"][freq] =  fourier_sum
+            self.components["seasonality"][freq] =  fourier_sum[:freq]
             self.ts = self.ts + fourier_sum
         return self
 

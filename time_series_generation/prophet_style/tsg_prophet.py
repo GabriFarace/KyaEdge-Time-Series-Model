@@ -118,8 +118,8 @@ class TimeSeriesGeneratorProphet:
             trend = trend + trend_p
         if trend.size != ts_length:
             raise ValueError('Trend size does not match')
+        self.components['trend'] = self.ts + trend
         self.ts = self.ts + trend
-        self.components['trend'] = trend
         return self
 
     def build_seasonality(self, seasonality_attributes_list : list[SeasonalityAttributesProphet]):

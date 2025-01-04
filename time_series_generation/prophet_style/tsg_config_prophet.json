@@ -3,7 +3,7 @@
     "n_years_max" : 20,
     "baseline_min" : 10,
     "baseline_max" : 500,
-    "unit_is_energy": true
+    "unit_is_energy": false
   },
   "trend" : {
     "max_shift_year" : 3,

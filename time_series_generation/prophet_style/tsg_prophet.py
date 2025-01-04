@@ -40,7 +40,7 @@ class ParametersGenerationConfigs:
         self.inactivity = {}
         self.reset()
 
-    def reset(self):
+    def reset(self, c=None):
         config = {
           "baseline" : {
             "n_years_max" : 20,
@@ -72,6 +72,8 @@ class ParametersGenerationConfigs:
             "max_prob" : 0.01
           }
         }
+        if c is not None:
+            config = c
         self.baseline = config["baseline"]
         self.trend = config["trend"]
         self.seasonal = config["seasonal"]
@@ -142,6 +144,7 @@ class TimeSeriesGeneratorProphet:
                 [coefficients[n][0] * np.cos((2 * np.pi * (n + 1) * t) / freq) + coefficients[n][1] * np.sin((2 * np.pi * (n + 1) * t) / freq)
                  for n in range(parameters_number)], axis=0
             )
+            # ODO build min max  is not taken into consideration --> to be fixed
             self.components["seasonality"][freq] =  fourier_sum[:freq]
             self.ts = self.ts + fourier_sum
         return self
@@ -177,11 +180,25 @@ class TimeSeriesGeneratorProphet:
                 self.ts[i] = 0
         return self
 
-    def build_min_max(self, max_value):
+    def build_min_max(self, max_value, normalization_value, percentage=0.2):
+        # First min-max scaling
         old_min = self.ts.min()
         old_max = self.ts.max()
         self.ts = (self.ts - old_min) * (max_value - 0) / (old_max - old_min)
+
+        # Normalization by subtracting the mean and adding normalization_value
+        min_mean = max(0, normalization_value * (1 - percentage))
+        max_mean = min(normalization_value * (1 + percentage), max_value)
+        normalization = np.random.uniform(min_mean, max_mean)
+
+        mean = self.ts.mean()
+        self.ts = self.ts - mean + normalization
+
+        # Truncate the values to the specified range [truncate_min, truncate_max]
+        self.ts = np.clip(self.ts, 0, max_value)
+
         return self
+
 
     def build_sum(self, sum_value):
         # Step 1: Compute the cumulative sum
@@ -346,7 +363,7 @@ class TimeSeriesDirectorProphet:
 
         # Add the scale of min and max
         if ts_flags.interval_constraint:
-            self.time_series_generator.build_min_max(max_value)
+            self.time_series_generator.build_min_max(max_value, baseline_value)
 
         # Add inactivities
         if ts_flags.inactivity:

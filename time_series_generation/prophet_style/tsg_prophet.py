@@ -2,6 +2,8 @@ import logging
 import numpy as np
 import json
 
+#TODO fix the component returned by the generator
+
 # Configure the logger
 logging.basicConfig(
     level=logging.INFO,  # Set the logging level
@@ -198,7 +200,6 @@ class TimeSeriesGeneratorProphet:
         self.ts = np.clip(self.ts, 0, max_value)
 
         return self
-
 
     def build_sum(self, sum_value):
         # Step 1: Compute the cumulative sum

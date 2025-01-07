@@ -2,6 +2,8 @@ import logging
 import numpy as np
 import json
 
+#TODO fix the component returned by the generator (normalization is needed when scaling)
+
 # Configure the logger
 logging.basicConfig(
     level=logging.INFO,  # Set the logging level
@@ -99,6 +101,7 @@ class TimeSeriesGeneratorNP:
         ''' Build the baseline component of the time series'''
         # Baseline
         self.ts = np.full(num_units, baseline_value, dtype=float)
+        self.components["baseline"] = self.ts.copy()
         return self
 
     def build_trend(self, trend_intervals, trend_changes, m_base):
@@ -127,7 +130,7 @@ class TimeSeriesGeneratorNP:
             trend = trend + trend_p
         if trend.size != ts_length:
             raise ValueError('Trend size does not match')
-        self.components['trend'] = self.ts + trend
+        self.components['trend'] = trend
         self.ts = self.ts + trend
         return self
 
@@ -151,7 +154,7 @@ class TimeSeriesGeneratorNP:
                 [coefficients[n][0] * np.cos((2 * np.pi * (n + 1) * t) / freq) + coefficients[n][1] * np.sin((2 * np.pi * (n + 1) * t) / freq)
                  for n in range(parameters_number)], axis=0
             )
-            # ODO build min max  is not taken into consideration --> to be fixed
+            # TODO build min max  is not taken into consideration --> to be fixed
             self.components["seasonality"][freq] =  fourier_sum[:freq]
             self.ts = self.ts + fourier_sum
         return self

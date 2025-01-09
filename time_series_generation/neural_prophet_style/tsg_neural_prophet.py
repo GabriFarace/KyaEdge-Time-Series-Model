@@ -392,7 +392,7 @@ class TimeSeriesDirectorNP:
         number_of_lags = np.random.randint(0, autoregressive_config["max_number_of_lags"] + 1 )
         coefficients = []
         for i in range(number_of_lags):
-            coefficients.append(np.random.uniform(0, autoregressive_config["max_coefficient"]))
+            coefficients.append(np.random.normal(0, autoregressive_config["max_coefficient"]))
         logger.info("\n\n AUTOREGRESSION")
         logger.info(f"Autoregression : Number of lags -> {number_of_lags}, Coefficients -> {coefficients}")
         return number_of_lags, coefficients

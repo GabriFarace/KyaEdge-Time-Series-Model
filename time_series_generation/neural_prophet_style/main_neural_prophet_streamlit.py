@@ -205,3 +205,4 @@ if submitted:
 
     #cd time_series_generation/neural_prophet_style
     #streamlit run main_neural_prophet_streamlit.py
+    #jupyter notebook --NotebookApp.allow_origin='https://colab.research.google.com' --port=8888 --no-browser

@@ -1,5 +1,6 @@
 import logging
 import numpy as np
+import pandas as pd
 import json
 
 #TODO fix the component returned by the generator (normalization is needed when scaling)
@@ -154,7 +155,6 @@ class TimeSeriesGeneratorNP:
                 [coefficients[n][0] * np.cos((2 * np.pi * (n + 1) * t) / freq) + coefficients[n][1] * np.sin((2 * np.pi * (n + 1) * t) / freq)
                  for n in range(parameters_number)], axis=0
             )
-            # TODO build min max  is not taken into consideration --> to be fixed
             self.components["seasonality"][freq] =  fourier_sum[:freq]
             self.ts = self.ts + fourier_sum
         return self
@@ -267,6 +267,9 @@ class TimeSeriesGeneratorNP:
 
     def generate(self):
         return self.ts
+
+    def get_start_date(self):
+        return (pd.Timestamp.today() + pd.Timedelta(days=1)).strftime('%Y-%m-%d')
 
     def get_components(self):
         return self.components
@@ -441,3 +444,5 @@ class TimeSeriesDirectorNP:
             self.time_series_generator.build_sum(sum_value)
 
         return self.time_series_generator.generate()
+
+

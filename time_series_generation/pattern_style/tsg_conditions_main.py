@@ -1,104 +1,130 @@
 from tsg_conditions import *
 import matplotlib.pyplot as plt
-import streamlit as st
 import numpy as np
+import pandas as pd
+def is_valid_date(date_str):
+    try:
+        pd.to_datetime(date_str, format='%Y-%m-%d')
+        return True
+    except ValueError:
+        return False
 
 
+def set_input(input_value, default_value):
+    try:
+        if type(default_value) == int:
+            input_value = int(input_value)
+        elif type(default_value) == float:
+            input_value = float(input_value)
+        elif type(default_value) == str:
+            input_value = str(input_value)
+        return input_value
+    except ValueError:
+        return default_value
 
-# Step 1: Fixed Instances (using caching)
-@st.cache_resource
-def initialize_time_series_objects():
-    # Initialize Time Series Generator and Director
+def main_generation():
+    # Retrieve cached instances
     tsg = TimeSeriesGeneratorConditions()
 
-    return tsg
+    default_baseline_value = 8.
+    default_num_units = 1095
+    default_min_value = 0.
+    default_max_value = 24.
+    default_noise_ratio_std = 0.
 
-# Retrieve cached instances
-tsg = initialize_time_series_objects()
+    baseline = input(f"Do you want to set the baseline value? Default : {default_baseline_value}")
+    num_un = input(f"Do you want to set the number of units? Default : {default_num_units}")
+    min_v = input(f"Do you want to set the minimum value? Default : {default_min_value}")
+    max_v = input(f"Do you want to set the maximum value? Default : {default_max_value}")
+    noise_ratio = input(f"Do you want to set the noise ratio standard deviation? Default : {default_noise_ratio_std}")
 
-# Step 2: Streamlit UI
-st.title("Time Series Generator")
+    baseline_value = set_input(baseline, default_baseline_value)
+    num_units = set_input(num_un, default_num_units)
+    min_value = set_input(min_v, default_min_value)
+    max_value = set_input(max_v, default_max_value)
+    noise_ratio_std = set_input(noise_ratio, default_noise_ratio_std)
 
-# Sidebar for parameters
-with st.form("Time Series Generation Parameters"):
-    # Initialize session state for flags
-
-    baseline_value = st.number_input("Baseline value", value=8)
-    num_units = st.number_input("Number of units", value=1095)
-    min_value = st.number_input("Minimum value", value=0)
-    max_value = st.number_input("Maximum value", value=24)
-    noise_ratio_std = st.number_input("Noise ratio std", value=0)
-
-    with st.expander("Operation settings"):
-        condition_options = [w_day for w_day in Weekday] + np.arange(1,32).tolist()
-        selected_condition = st.selectbox("Select one condition: Weekday or Monthday", condition_options)
-
-        operation_options = ["Set", "Add", "Multiply"]
-        selected_op = st.selectbox("Select one operation:", operation_options)
-
-        value = st.number_input(
-            "Value of the operation",
-            value=0
-        )
-
-        # Allow the user to select a start date
-        start_date = st.date_input("Pick the start date:")
-
-        # Allow the user to select an end date
-        end_date = st.date_input("Pick the end date:")
-
-
-
-    # Submit button
-    submitted = st.form_submit_button("Apply")
-
-    # Undo button
-    undo = st.form_submit_button("Undo")
-
-    # Reset button
-    reset = st.form_submit_button("Reset")
-
-# Step 3: Generate Time Series Upon Submission
-if submitted:
-    if tsg.ts is None:
-        tsg.build_baseline(num_units=num_units, baseline_value=baseline_value, max_value=max_value, min_value=min_value, noise_ratio_std=noise_ratio_std)
-    else:
-        if selected_op == "Add":
-            func = lambda x: x + value
-        elif selected_op == "Multiply":
-            func = lambda x: x * value
-        else:
-            func = lambda x: value
-
-        # Convert the selected date to a string in the format 'YYYY-MM-DD'
-        if start_date:
-            start_date = start_date.strftime("'%Y-%m-%d'")
-        # Convert the selected date to a string in the format 'YYYY-MM-DD'
-        if end_date:
-            end_date = end_date.strftime("'%Y-%m-%d'")
-        tsg.apply_func_condition(condition=selected_condition, func=func, start_date=start_date, end_date=end_date)
-
-
-    time_series = tsg.ts
-
+    tsg.build_baseline(num_units=num_units, baseline_value=baseline_value, max_value=max_value, min_value=min_value, noise_ratio_std=noise_ratio_std)
     # Plot the generated time series
     fig, ax = plt.subplots()
-    ax.plot(time_series["ds"], time_series["y"], label="Generated Time Series")
+    ax.plot(tsg.ts["ds"], tsg.ts["y"], label="Generated Time Series")
     ax.set_title("Time Series")
     ax.set_xlabel("Time (Days)")
     ax.set_ylabel("Value")
     ax.legend()
 
-    # Display plot
-    st.pyplot(fig)
+    plt.show()
 
-if undo:
-    tsg.undo()
+    done = False
+    while not done:
 
-if reset:
-    tsg.reset()
+            selected_op = None
+            selected_condition = None
+            start_date = None
+            end_date = None
+
+            condition_options = [w_day for w_day in Weekday] + np.arange(1,32).tolist()
+            selected = False
+            while not selected:
+                selected_c = input(f"Select one condition index, Weekday or Monthday : {condition_options} : ")
+                if int(selected_c) in range(len(condition_options)):
+                    selected_condition = condition_options[int(selected_c)]
+                    selected = True
+
+            operation_options = ["Set", "Add", "Multiply"]
+            selected = False
+            while not selected:
+                selected_o = input(f"Select one operation index : {operation_options} : ")
+                if int(selected_o) in range(len(operation_options)):
+                    selected_op = operation_options[int(selected_o)]
+                    selected = True
+
+
+            value = input(f"Select the value : ")
+            value = set_input(value, 0.)
+
+            # Allow the user to select a start date
+            selected = False
+            while not selected:
+                start_date = input(f"Pick the start date, Expected format: 'YYYY-MM-DD' : ")
+                if is_valid_date(start_date):
+                    selected = True
+
+            # Allow the user to select an end date
+            selected = False
+            while not selected:
+                end_date = input(f"Pick the end date, Expected format: 'YYYY-MM-DD' : ")
+                if is_valid_date(end_date):
+                    selected = True
 
 
 
-    #cd time_series_generation/pattern_style
-    #streamlit run tsg_conditions_main.py
+            if selected_op == "Add":
+                func = lambda x: x + value
+            elif selected_op == "Multiply":
+                func = lambda x: x * value
+            else:
+                func = lambda x: value
+
+            tsg.apply_func_condition(condition=selected_condition, func=func, start_date=start_date, end_date=end_date)
+
+
+
+            # Plot the generated time series
+            fig, ax = plt.subplots()
+            ax.plot(tsg.ts["ds"], tsg.ts["y"], label="Generated Time Series")
+            ax.set_title("Time Series")
+            ax.set_xlabel("Time (Days)")
+            ax.set_ylabel("Value")
+            ax.legend()
+
+            plt.show()
+
+            keep_going = input("Do you want to keep going? yes-y or no-n : ")
+            if keep_going == "n":
+                done = True
+
+if __name__ == '__main__':
+    main_generation()
+
+    # 2025-01-01

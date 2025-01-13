@@ -4,6 +4,9 @@ import pandas as pd
 import numpy as np
 from enum import Enum
 
+from matplotlib import pyplot as plt
+
+
 class Weekday(Enum):
     MONDAY = "Monday"
     TUESDAY = "Tuesday"
@@ -77,6 +80,8 @@ class TimeSeriesGeneratorConditions:
 
         self.ts["y"] = np.clip(self.ts["y"], self.min_value, self.max_value)
 
+        print(self.ts.head())
+
         return self
 
     def apply_func_condition(self, condition: Union[Weekday, int], func, start_date=None, end_date=None):
@@ -96,7 +101,7 @@ class TimeSeriesGeneratorConditions:
             # Validate start_date
             if not is_valid_date(start_date):
                 raise ValueError(f"Invalid start_date provided: {start_date}. Expected format: 'YYYY-MM-DD'.")
-            start_date = pd.to_datetime(end_date)
+            start_date = pd.to_datetime(start_date)
         if end_date:
             # Validate end_date
             if not is_valid_date(end_date):
@@ -117,16 +122,17 @@ class TimeSeriesGeneratorConditions:
             raise ValueError(f"Invalid condition provided: {condition}. Expected Weekday or int.")
 
         if start_date:
+
             mask &= (self.ts['ds'] >= start_date)
         if end_date:
             mask &= (self.ts['ds'] <= end_date)
 
-
-
         # Apply the function to the filtered rows
         self.ts.loc[mask, 'y'] = self.ts.loc[mask, 'y'].apply(func)
 
+
         self.ts["y"] = np.clip(self.ts["y"], self.min_value, self.max_value)
+
 
         return self
 

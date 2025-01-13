@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 from enum import Enum
 
-from matplotlib import pyplot as plt
 
 
 class Weekday(Enum):
@@ -79,8 +78,6 @@ class TimeSeriesGeneratorConditions:
         self.ts['weekday'] = self.ts['ds'].dt.day_name()
 
         self.ts["y"] = np.clip(self.ts["y"], self.min_value, self.max_value)
-
-        print(self.ts.head())
 
         return self
 

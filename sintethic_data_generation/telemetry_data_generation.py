@@ -36,6 +36,8 @@ class TelemetryDataGeneratorWrapper:
         max_value = 24
         sum_value = asset_data["category_data"]["useful_life_hours"]
 
+        print(f" NUMBER OF DAYS {num_units}, BASELINE VALUE {baseline_value}")
+
         # Build the baseline
         self.time_series_generator.build_baseline(num_units, baseline_value)
 

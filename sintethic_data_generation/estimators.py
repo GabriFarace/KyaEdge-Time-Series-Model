@@ -65,11 +65,10 @@ class LeasingRiskScoresEstimator:
     @staticmethod
     def _get_gap_curve(remarketing_value_curve, residual_debt):
         return {
-            "lower_bound_curve" : remarketing_value_curve["lower_bound_curve"] - residual_debt["curve"],
-            "mean_curve" : remarketing_value_curve["mean_curve"] - residual_debt["curve"],
-            "upper_bound_curve" : remarketing_value_curve["upper_bound_curve"] - residual_debt["curve"]
+            "lower_bound_curve" : (np.array(remarketing_value_curve["lower_bound_curve"]) - np.array(residual_debt["curve"])).tolist(),
+            "mean_curve" : (np.array(remarketing_value_curve["mean_curve"]) - np.array(residual_debt["curve"])).tolist(),
+            "upper_bound_curve" : (np.array(remarketing_value_curve["upper_bound_curve"]) - np.array(residual_debt["curve"])).tolist()
         }
-
 
 
 class AssetQualityRatingScoresEstimator:
@@ -90,9 +89,20 @@ class AssetQualityRatingScoresEstimator:
         mean_curve = []
         baseline = asset_data["category_data"]["useful_life_hours"] / len(telemetry_data["mean_curve"])
         for i in range(len(telemetry_data["mean_curve"])):
-            lower_bound_curve.append(int((telemetry_data["lower_bound_curve"][i]/baseline) * 100))
-            upper_bound_curve.append(int((telemetry_data["upper_bound_curve"][i]/baseline) * 100))
-            mean_curve.append(int((telemetry_data["mean_curve"][i]/baseline) * 100))
+            if telemetry_data["lower_bound_curve"][i] > 0:
+                lower_bound_curve.append(int((telemetry_data["lower_bound_curve"][i]/baseline) * 100))
+            else:
+                lower_bound_curve.append(1)
+
+            if telemetry_data["upper_bound_curve"][i] > 0:
+                 upper_bound_curve.append(int((telemetry_data["upper_bound_curve"][i]/baseline) * 100))
+            else:
+                upper_bound_curve.append(1)
+
+            if telemetry_data["mean_curve"][i] > 0:
+                mean_curve.append(int((telemetry_data["mean_curve"][i]/baseline) * 100))
+            else:
+                mean_curve.append(1)
 
         return {
             "lower_bound_curve" : lower_bound_curve,
@@ -102,29 +112,34 @@ class AssetQualityRatingScoresEstimator:
 
     @staticmethod
     def _get_quality_rating_curve(asset_data, telemetry_data, operational_use_curve):
-        ''' Quality is the normalized [-5,5] ratio between 1/average last 30 days of operational use'''
+        ''' Quality is the normalized [-5,5] ratio between (1/average history of operational use)'''
         lower_bound_curve = []
         upper_bound_curve = []
         mean_curve = []
-        i_min = 0
         i_max = 0
-        interval = 30
-        min_value = -5
-        max_value = 5
+
+
+        def custom_function(x):
+            ''' piecewise function that takes output values between -5 and 5'''
+            if 0.1 <= x <= 1:
+                return 5 - (50 / 9) * (1 - x)
+            elif 0 <= x < 0.1:
+                return -50 * x + 5
+            else:
+                raise ValueError("Input must be in the range [0, 1].")
+
         for i in range(len(telemetry_data["mean_curve"])):
-            lower_bound_curve.append(((1/np.mean(operational_use_curve["lower_bound_curve"][i_min : i_max + 1])) * (max_value - min_value)) + min_value)
-            upper_bound_curve.append(((1/np.mean(operational_use_curve["upper_bound_curve"][i_min : i_max + 1])) * (max_value - min_value)) + min_value)
-            mean_curve.append(((1/np.mean(operational_use_curve["mean_curve"][i_min : i_max + 1])) * (max_value - min_value)) + min_value)
+            lower_bound_curve.append(custom_function(1/np.mean(operational_use_curve["lower_bound_curve"][0 : i_max + 1])))
+            upper_bound_curve.append(custom_function(1/np.mean(operational_use_curve["upper_bound_curve"][0 : i_max + 1])))
+            mean_curve.append(custom_function(1/np.mean(operational_use_curve["mean_curve"][0 : i_max + 1])))
             i_max += 1
-            if i >= interval - 1:
-                i_min += 1
+
 
         return {
             "lower_bound_curve" : lower_bound_curve,
             "mean_curve" : mean_curve,
             "upper_bound_curve" : upper_bound_curve
         }
-
 
 
 class EsgRatingScoresEstimator:
@@ -176,14 +191,135 @@ class EsgRatingScoresEstimator:
 
     @staticmethod
     def _get_environmental_risk_indicators(asset_data):
-        pass
+        protective_measures = asset_data["esg_inputs"]["protective_measures"]
+
+        def get_final_risk(risk, protective_measures_number):
+            ''' Lower the risk by one level for each 3 protective measures'''
+            risk_lowered_by = protective_measures_number / 3
+            # LOW 1 or less than 0
+            # MEDIUM 2
+            # HIGH 3
+            risk_map = {"low" : 1, "medium" : 2, "high" : 3}
+            final_risk = risk_map[risk] - risk_lowered_by
+            if final_risk <= 1:
+                return "low"
+            elif final_risk == 2:
+                return "medium"
+            else:
+                return "high"
+
+        return {
+            "flood_hazard" : get_final_risk(asset_data["city_data"]["flood_hazard"], len(protective_measures["flood_hazard_protective_measures"])),
+            "landslide_hazard" : get_final_risk(asset_data["city_data"]["landslide_hazard"], len(protective_measures["landslide_hazard_protective_measures"])),
+            "climatic_hazard" : get_final_risk(asset_data["city_data"]["climatic_hazard"], len(protective_measures["climatic_hazard_protective_measures"])),
+            "seismic_hazard" : get_final_risk(asset_data["city_data"]["seismic_hazard"], len(protective_measures["seismic_hazard_protective_measures"]))
+        }
 
 
 class StrategyAdvisorScoresEstimator:
 
     @staticmethod
-    def get_strategy_advisors_scores(leasing_risk_scores, asset_quality_rating_scores, esg_ratings_scores):
-        pass
+    def get_strategy_advisors_scores(leasing_risk_scores, asset_quality_rating_scores, esg_ratings_scores, number_of_units):
+        asset_quality_rating_task = StrategyAdvisorScoresEstimator._get_quality_rating_advice(asset_quality_rating_scores, number_of_units)
+        leasing_risk_task = StrategyAdvisorScoresEstimator._get_leasing_risk_advice(leasing_risk_scores, number_of_units)
+        esg_rating_task = StrategyAdvisorScoresEstimator._get_esg_rating_advice(esg_ratings_scores, number_of_units)
+
+        count = 0
+        if "CRITICO" in asset_quality_rating_task["status"]:
+            count += 1
+        if "CRITICO" in leasing_risk_task["status"]:
+            count += 1
+        if "CRITICO" in esg_rating_task["status"]:
+            count += 1
+
+        if count == 0:
+            priority = "current_situation_under_control"
+        elif count == 1:
+            priority = "asset_with_usage_trend_to_be_investigated"
+        elif count == 2:
+            priority = "low_priority_end_of_lease_suggestion"
+        else:
+            priority = "high_priority_critical_end_of_lease_action"
+
+        return {
+            "priority_value" : priority,
+            "asset_quality_rating_task" : asset_quality_rating_task,
+            "leasing_risk_task" : leasing_risk_task,
+            "esg_rating_task" : esg_rating_task
+        }
+
+    @staticmethod
+    def _get_quality_rating_advice(asset_quality_rating_scores, number_of_units):
+        ''' Check the quality now and at the end of the contract'''
+        low_quality_now = asset_quality_rating_scores["quality_rating_curve"]["mean_curve"][number_of_units - 1] < 0
+        low_quality_end = asset_quality_rating_scores["quality_rating_curve"]["mean_curve"][-1] < 0
+
+        if low_quality_now and low_quality_end:
+            status = "CRITICO : Sulla base del livello di utilizzo rilevato e del modello previsionale di stima, l’asset è significativamente sovrautilizzato e si sta rapidamente deteriorando"
+            advice = "Si suggerisce una proposta di sostituzione/ rinnovo tecnologico per ottimizzare profitto prima che il gap remarketing/debito cliente scenda sotto lo zero"
+        elif low_quality_now:
+            status = "MEDIO : L'asset è sovrautilizzato al momento ma sulla base del modello previsionale non lo sarà al termine del contratto"
+            advice = "Nessuna azione suggerita"
+        elif low_quality_end:
+            status = "MEDIO : L'asset non è sovrautilizzato al momento ma sulla base del modello previsionale lo sarà al termine del contratto"
+            advice = "Si suggerisce una proposta di sostituzione/ rinnovo tecnologico per ottimizzare profitto prima che il gap remarketing/debito cliente scenda sotto lo zero"
+        else:
+            status = "Il valore della qualità dell'asset è ritenuto ACCETTABILE"
+            advice = "Nessuna azione suggerita"
+
+        return {
+            "status" : status,
+            "advice" : advice
+        }
+
+    @staticmethod
+    def _get_leasing_risk_advice(leasing_risk_scores, number_of_units):
+        ''' Check the GAP now and at the end of the contract'''
+        low_quality_now = leasing_risk_scores["gap_curve"]["mean_curve"][number_of_units - 1] < 0
+        low_quality_end = leasing_risk_scores["gap_curve"]["mean_curve"][-1] < 0
+
+        if low_quality_now and low_quality_end:
+            status = "CRITICO : Sulla base del valore di mercato corrente e del modello previsionale di stima, il GAP rilevato è minore di 0"
+            advice = "Si suggerisce una misura che vada a portare il GAP ad un valore maggiore di 0"
+        elif low_quality_now:
+            status = "MEDIO : L'asset ha un GAP minore di 0 al momento ma sulla base del modello previsionale non lo sarà al termine del contratto"
+            advice = "Nessuna azione suggerita"
+        elif low_quality_end:
+            status = "MEDIO : L'asset ha un GAP maggiore di 0 al momento ma sulla base del modello previsionale sarà minore di 0 al termine del contratto"
+            advice = "Si suggerisce una misura che vada a portare il GAP ad un valore maggiore di 0 al termine del contratto"
+        else:
+            status = "Il valore del rischio di locazione è ritenuto ACCETTABILE"
+            advice = "Nessuna azione suggerita"
+
+        return {
+            "status": status,
+            "advice": advice
+        }
+
+    @staticmethod
+    def _get_esg_rating_advice(esg_ratings_scores, number_of_units):
+        ''' Check the environmental risk indicators  (if some hazard has high risk or not) now and at the end of the contract'''
+
+        indicators = [
+            esg_ratings_scores["environmental_risk_indicators"]["flood_hazard"],
+            esg_ratings_scores["environmental_risk_indicators"]["landslide_hazard"],
+            esg_ratings_scores["environmental_risk_indicators"]["climatic_hazard"],
+            esg_ratings_scores["environmental_risk_indicators"]["seismic_hazard"]
+        ]
+        high_risk = any(indicator == "high" for indicator in indicators)
+
+        if high_risk:
+            status = "CRITICO : Sulla base degli indicatori esg, è presente un alto rischio ambientale"
+            advice = "Si suggerisce una misura protettiva appropriata per l'asset che riduca il rischio ambientale"
+        else:
+            status = "Il valore degli indicatori esg è ritenuto ACCETTABILE"
+            advice = "Nessuna azione suggerita"
+
+        return {
+            "status": status,
+            "advice": advice
+        }
+
 
 class AssetScoresEstimator:
 
@@ -195,7 +331,7 @@ class AssetScoresEstimator:
 
         esg_rating = EsgRatingScoresEstimator.get_esg_ratings_scores(asset_data, telemetry_data, number_of_units)
 
-        strategy_advisor = StrategyAdvisorScoresEstimator.get_strategy_advisors_scores(leasing_risk, asset_quality_rating, esg_rating)
+        strategy_advisor = StrategyAdvisorScoresEstimator.get_strategy_advisors_scores(leasing_risk, asset_quality_rating, esg_rating, number_of_units)
 
         return {
             "number_of_units": number_of_units,

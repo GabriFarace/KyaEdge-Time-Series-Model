@@ -52,9 +52,9 @@ class AssetDataGenerator:
         ''' Generate sintethic asset data : category, contract_data, esg inputs and others'''
         new_asset = {}
         id = self.asset_counter
-        category = np.random.choice(list(categories.keys()))
-        city_data = np.random.choice(list(cities_data.keys()))
-        lessor = np.random.choice(np.arange(1, NUMBER_OF_LESSORS + 1))
+        category = np.random.choice(categories)
+        city_data = np.random.choice(cities_data)
+        lessor = int(np.random.choice(np.arange(1, NUMBER_OF_LESSORS + 1)))
         contract_data = self._get_contract_data(category)
         protective_measures = self._get_protective_measures()
 
@@ -94,12 +94,12 @@ class AssetDataGenerator:
 
     def _get_contract_data(self, category) -> dict:
         ''' Generate and return random contract data based on the asset category data'''
-        years = np.random.choice(np.arange(1, category["useful_life_years"] + 1))
+        years = int(np.random.choice(np.arange(1, category["useful_life_years"] + 1)))
         contract_months = years * 12
         contract_amount = (years/category["useful_life_years"]) * (category["cost"] - category["residual_value"])
 
         # Upfront payment equal to 1 up to 5 times the ratio between contract_amount and contract_months
-        contract_upfront_payment = np.random.uniform(1, 5) * (contract_amount/contract_months)
+        contract_upfront_payment = float(np.random.uniform(1, 5) * (contract_amount/contract_months))
 
 
         contract_monthly_payment = (contract_amount - contract_upfront_payment) / contract_months

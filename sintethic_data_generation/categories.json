@@ -1,0 +1,92 @@
+[
+    {
+        "id": "23181502",
+        "name": "Food Preparation Machinery - Milling Machinery",
+        "cost": 50000,
+        "useful_life_years": 10,
+        "useful_life_hours": 20000,
+        "power_kw": 10,
+        "residual_value": 5000
+    },
+    {
+        "id": "23152901",
+        "name": "Packaging Machinery - Wrapping Machinery",
+        "cost": 80000,
+        "useful_life_years": 12,
+        "useful_life_hours": 18000,
+        "power_kw": 5,
+        "residual_value": 8000
+    },
+    {
+        "id": "22101524",
+        "name": "Earth Moving Machinery - Mobile Excavators",
+        "cost": 150000,
+        "useful_life_years": 8,
+        "useful_life_hours": 12000,
+        "power_kw": 150,
+        "residual_value": 20000
+    },
+    {
+        "id": "23181501",
+        "name": "Food Preparation Machinery - Filling Machinery",
+        "cost": 100000,
+        "useful_life_years": 10,
+        "useful_life_hours": 15000,
+        "power_kw": 7,
+        "residual_value": 10000
+    },
+    {
+        "id": "23181700",
+        "name": "Food Cooking And Smoking Machinery",
+        "cost": 120000,
+        "useful_life_years": 12,
+        "useful_life_hours": 16000,
+        "power_kw": 15,
+        "residual_value": 12000
+    },
+    {
+        "id": "23241401",
+        "name": "Metal Grinding Machines - Bench Grinder",
+        "cost": 2000,
+        "useful_life_years": 8,
+        "useful_life_hours": 10000,
+        "power_kw": 1,
+        "residual_value": 200
+    },
+    {
+        "id": "22101632",
+        "name": "Paving Equipment - Paint Stripping Machine",
+        "cost": 10000,
+        "useful_life_years": 6,
+        "useful_life_hours": 5000,
+        "power_kw": 2,
+        "residual_value": 1000
+    },
+    {
+        "id": "23191101",
+        "name": "Continuous Mixers - Single Screw Mixers",
+        "cost": 30000,
+        "useful_life_years": 10,
+        "useful_life_hours": 12000,
+        "power_kw": 5,
+        "residual_value": 3000
+    },
+    {
+        "id": "20102100",
+        "name": "Mining And Quarrying Machinery And Equipment - Rock Drills",
+        "cost": 50000,
+        "useful_life_years": 7,
+        "useful_life_hours": 10000,
+        "power_kw": 20,
+        "residual_value": 5000
+    },
+    {
+        "id": "23151900",
+        "name": "Paper Making And Paper Processing Machinery And Equipment",
+        "cost": 250000,
+        "useful_life_years": 15,
+        "useful_life_hours": 25000,
+        "power_kw": 50,
+        "residual_value": 25000
+    }
+]

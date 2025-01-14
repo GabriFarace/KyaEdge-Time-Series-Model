@@ -59,10 +59,10 @@ class ParametersGenerationConfigsNP:
           },
           "seasonal" : {
             "frequencies" : [
-              {"value" :  7, "params_number": 3, "coeff_ratio_std" :  0.3, "prob" :  0.8},
-              {"value" :  30, "params_number": 5, "coeff_ratio_std" :  0.3, "prob" :  0.8},
-              {"value" :  60, "params_number": 7, "coeff_ratio_std" :  0.3, "prob" :  0.8},
-              {"value" :  365, "params_number": 10, "coeff_ratio_std" :  0.3, "prob" :  0.8}
+              {"value" :  7, "params_number": 3, "coeff_ratio_std" :  0.3, "prob" :  0.5},
+              {"value" :  30, "params_number": 5, "coeff_ratio_std" :  0.3, "prob" :  0.5},
+              {"value" :  60, "params_number": 7, "coeff_ratio_std" :  0.3, "prob" :  0.5},
+              {"value" :  365, "params_number": 10, "coeff_ratio_std" :  0.3, "prob" :  0.5}
               ]
           },
           "noise" : {

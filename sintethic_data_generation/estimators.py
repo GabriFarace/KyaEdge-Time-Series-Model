@@ -32,7 +32,7 @@ class LeasingRiskScoresEstimator:
         current_debt = asset_data["contract_data"]["contract_amount"] - asset_data["contract_data"]["contract_upfront_payment"]
         daily_subtraction = current_debt / len(telemetry_data)
         for i in range(len(telemetry_data["mean_curve"])):
-            residual_debt.append(current_debt)
+            residual_debt.append(round(current_debt,2))
             current_debt = current_debt - daily_subtraction
 
         return {"curve" : residual_debt}
@@ -49,9 +49,9 @@ class LeasingRiskScoresEstimator:
         useful_life = asset_data["category_data"]["useful_life_hours"]
         residual_value = asset_data["residual_value"]
         for i in range(len(telemetry_data["mean_curve"])):
-            lower_bound_curve.append(((cost - residual_value) - (cost - residual_value) * (applied_life_lower/useful_life)) + residual_value)
-            upper_bound_curve.append(((cost - residual_value) - (cost - residual_value) * (applied_life_upper/useful_life)) + residual_value)
-            mean_curve.append(((cost - residual_value) - (cost - residual_value) * (applied_life_mean/useful_life)) + residual_value)
+            lower_bound_curve.append(round(((cost - residual_value) - (cost - residual_value) * (applied_life_lower/useful_life)) + residual_value, 2))
+            upper_bound_curve.append(round(((cost - residual_value) - (cost - residual_value) * (applied_life_upper/useful_life)) + residual_value, 2))
+            mean_curve.append(round(((cost - residual_value) - (cost - residual_value) * (applied_life_mean/useful_life)) + residual_value, 2))
             applied_life_mean += telemetry_data["mean_curve"][i]
             applied_life_lower += telemetry_data["lower_bound_curve"][i]
             applied_life_upper += telemetry_data["upper_bound_curve"][i]
@@ -121,10 +121,10 @@ class AssetQualityRatingScoresEstimator:
 
         def custom_function(x):
             ''' piecewise function that takes output values between -5 and 5'''
-            if 0.1 <= x <= 1:
-                return 5 - (50 / 9) * (1 - x)
-            elif 0 <= x < 0.1:
-                return -50 * x + 5
+            if 0.01 <= x <= 1:
+                return round(5 - (50 / 9) * (1 - x), 2)
+            elif 0 <= x < 0.01:
+                return round(50 * x - 5, 2)
             else:
                 raise ValueError("Input must be in the range [0, 1].")
 
@@ -160,9 +160,9 @@ class EsgRatingScoresEstimator:
         mean_curve = []
         power = asset_data["category_data"]["power_kw"]
         for i in range(len(telemetry_data["mean_curve"])):
-            lower_bound_curve.append(telemetry_data["lower_bound_curve"][i] * power)
-            upper_bound_curve.append(telemetry_data["upper_bound_curve"][i] * power)
-            mean_curve.append(telemetry_data["mean_curve"][i] * power)
+            lower_bound_curve.append(round(telemetry_data["lower_bound_curve"][i] * power, 2))
+            upper_bound_curve.append(round(telemetry_data["upper_bound_curve"][i] * power, 2))
+            mean_curve.append(round(telemetry_data["mean_curve"][i] * power, 2))
 
         return {
             "lower_bound_curve" : lower_bound_curve,
@@ -178,9 +178,9 @@ class EsgRatingScoresEstimator:
         mean_curve = []
         emission_factor = asset_data["city_data"]["carbon_intensity_gCO2eq_kWh"]
         for i in range(len(telemetry_data["mean_curve"])):
-            lower_bound_curve.append(emission_factor * energy_consumed["lower_bound_curve"][i])
-            upper_bound_curve.append(emission_factor * energy_consumed["upper_bound_curve"][i])
-            mean_curve.append(emission_factor * energy_consumed["mean_curve"][i])
+            lower_bound_curve.append(round(emission_factor * energy_consumed["lower_bound_curve"][i], 2))
+            upper_bound_curve.append(round(emission_factor * energy_consumed["upper_bound_curve"][i], 2))
+            mean_curve.append(round(emission_factor * energy_consumed["mean_curve"][i], 2))
 
 
         return {

@@ -97,9 +97,9 @@ def get_forecasted_telemetry(telemetry_data, future_periods, sum_maximum, today,
     def build_sum(telemetry, sum_value):
         '''' Constraint the sum of the time series to be sum_value by truncating to 0 the series from the time step where the sum is reached'''
 
-        telemetry_copy = telemetry.copy()
+        telemetry_copy = np.array(telemetry)
         # Step 1: Compute the cumulative sum
-        cumulative_sum = np.cumsum(telemetry)
+        cumulative_sum = np.cumsum(telemetry_copy)
 
         # Step 2: Find the index where cumulative sum exceeds the limit
         truncation_index = np.argmax(cumulative_sum > sum_value) if np.any(cumulative_sum > sum_value) else -1
@@ -108,7 +108,7 @@ def get_forecasted_telemetry(telemetry_data, future_periods, sum_maximum, today,
         if truncation_index != -1:  # Only truncate if the limit is surpassed
             telemetry_copy[truncation_index:] = 0
 
-        return telemetry_copy
+        return telemetry_copy.tolist()
 
     return  {
         "lower_bound_curve": build_sum(telemetry_data + yhat_lower_list, sum_maximum),

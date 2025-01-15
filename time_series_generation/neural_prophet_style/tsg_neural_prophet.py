@@ -223,7 +223,7 @@ class TimeSeriesGeneratorNP:
         self.ts = self.ts + autoregressive_component
         return self
 
-    def build_min_max(self, max_value, normalization_value, percentage=0.2):
+    def build_min_max(self, max_value, normalization_value, percentage=0.3):
         ''' Scale the time series in the interval [0, max_value] and then apply mean-scaling with value normalization_value plus/minus percentage'''
 
         if self.ts is None:

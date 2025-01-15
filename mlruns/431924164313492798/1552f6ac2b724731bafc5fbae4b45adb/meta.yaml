@@ -1,0 +1,16 @@
+artifact_uri: mlflow-artifacts:/431924164313492798/1552f6ac2b724731bafc5fbae4b45adb/artifacts
+deleted_time: 1736423460499
+end_time: 1736423313305
+entry_point_name: ''
+experiment_id: '431924164313492798'
+lifecycle_stage: deleted
+run_id: 1552f6ac2b724731bafc5fbae4b45adb
+run_name: Prophet - ST - no autoregression
+run_uuid: 1552f6ac2b724731bafc5fbae4b45adb
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1736423309924
+status: 3
+tags: []
+user_id: farac

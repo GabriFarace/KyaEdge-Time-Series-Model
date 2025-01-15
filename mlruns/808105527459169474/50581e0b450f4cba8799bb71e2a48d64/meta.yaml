@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/808105527459169474/50581e0b450f4cba8799bb71e2a48d64/artifacts
+end_time: 1736418550072
+entry_point_name: ''
+experiment_id: '808105527459169474'
+lifecycle_stage: active
+run_id: 50581e0b450f4cba8799bb71e2a48d64
+run_name: Trend-Seas All seasonalities specified
+run_uuid: 50581e0b450f4cba8799bb71e2a48d64
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1736418516474
+status: 3
+tags: []
+user_id: farac

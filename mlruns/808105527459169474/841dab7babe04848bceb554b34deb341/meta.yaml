@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/808105527459169474/841dab7babe04848bceb554b34deb341/artifacts
+end_time: 1736412591615
+entry_point_name: ''
+experiment_id: '808105527459169474'
+lifecycle_stage: active
+run_id: 841dab7babe04848bceb554b34deb341
+run_name: Trend-only
+run_uuid: 841dab7babe04848bceb554b34deb341
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1736412573935
+status: 3
+tags: []
+user_id: farac

@@ -84,7 +84,7 @@ class AssetDataGenerator:
             "protective_measures" : protective_measures
         }
         # Registration date (We assume asset a registered the 1 of January 2020
-        new_asset["start_date"] = "2020-01-01"  # format '%Y-%m-%d'
+        new_asset["start_date"] = "2021-01-01"  # format '%Y-%m-%d'
 
         new_asset["category_data"] = category
         new_asset["city_data"] = city_data

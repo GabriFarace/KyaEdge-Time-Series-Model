@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/808105527459169474/0d153600e8fe45a89eab3f95d685d2b0/artifacts
+end_time: 1736418663197
+entry_point_name: ''
+experiment_id: '808105527459169474'
+lifecycle_stage: active
+run_id: 0d153600e8fe45a89eab3f95d685d2b0
+run_name: Trend-Seas All Regularized 200 changepoints regularization = 5
+run_uuid: 0d153600e8fe45a89eab3f95d685d2b0
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1736418629854
+status: 3
+tags: []
+user_id: farac

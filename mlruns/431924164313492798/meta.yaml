@@ -1,0 +1,6 @@
+artifact_location: mlflow-artifacts:/431924164313492798
+creation_time: 1736421536565
+experiment_id: '431924164313492798'
+last_update_time: 1736421536565
+lifecycle_stage: active
+name: Prophet vs Neural Prophet

@@ -277,4 +277,4 @@ def generate_loop(num_generation):
 
 
 if __name__ == '__main__':
-    generate_loop(num_generation=2)
+    generate_loop(num_generation=10)

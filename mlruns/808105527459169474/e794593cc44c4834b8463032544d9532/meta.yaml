@@ -1,0 +1,16 @@
+artifact_uri: mlflow-artifacts:/808105527459169474/e794593cc44c4834b8463032544d9532/artifacts
+deleted_time: 1736417028173
+end_time: 1736415480560
+entry_point_name: ''
+experiment_id: '808105527459169474'
+lifecycle_stage: deleted
+run_id: e794593cc44c4834b8463032544d9532
+run_name: Seasonality-only All seasonalities specified
+run_uuid: e794593cc44c4834b8463032544d9532
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1736415457081
+status: 3
+tags: []
+user_id: farac

@@ -1,0 +1,16 @@
+artifact_uri: mlflow-artifacts:/808105527459169474/67e189bdade44c9b970447d7df8af242/artifacts
+deleted_time: 1736412683470
+end_time: 1736411816232
+entry_point_name: ''
+experiment_id: '808105527459169474'
+lifecycle_stage: deleted
+run_id: 67e189bdade44c9b970447d7df8af242
+run_name: classy-mole-423
+run_uuid: 67e189bdade44c9b970447d7df8af242
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1736411791771
+status: 3
+tags: []
+user_id: farac

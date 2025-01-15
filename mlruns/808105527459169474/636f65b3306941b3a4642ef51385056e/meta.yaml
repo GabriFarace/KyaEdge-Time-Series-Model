@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/808105527459169474/636f65b3306941b3a4642ef51385056e/artifacts
+end_time: 1736417500212
+entry_point_name: ''
+experiment_id: '808105527459169474'
+lifecycle_stage: active
+run_id: 636f65b3306941b3a4642ef51385056e
+run_name: Seasonality-only All Regularized 200 changepoints regularization = 0.1
+run_uuid: 636f65b3306941b3a4642ef51385056e
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1736417473867
+status: 3
+tags: []
+user_id: farac

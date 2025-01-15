@@ -1,0 +1,16 @@
+artifact_uri: mlflow-artifacts:/431924164313492798/197e8c226338494fa7bd035d39503ceb/artifacts
+deleted_time: 1736434952828
+end_time: 1736434768875
+entry_point_name: ''
+experiment_id: '431924164313492798'
+lifecycle_stage: deleted
+run_id: 197e8c226338494fa7bd035d39503ceb
+run_name: Prophet - Excessive Autoregression
+run_uuid: 197e8c226338494fa7bd035d39503ceb
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1736434768282
+status: 3
+tags: []
+user_id: farac

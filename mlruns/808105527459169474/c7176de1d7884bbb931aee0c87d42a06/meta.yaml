@@ -1,0 +1,16 @@
+artifact_uri: mlflow-artifacts:/808105527459169474/c7176de1d7884bbb931aee0c87d42a06/artifacts
+deleted_time: 1736413202428
+end_time: 1736413105155
+entry_point_name: ''
+experiment_id: '808105527459169474'
+lifecycle_stage: deleted
+run_id: c7176de1d7884bbb931aee0c87d42a06
+run_name: tasteful-croc-367
+run_uuid: c7176de1d7884bbb931aee0c87d42a06
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1736413105082
+status: 4
+tags: []
+user_id: farac

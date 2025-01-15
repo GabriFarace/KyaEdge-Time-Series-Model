@@ -94,7 +94,8 @@ class AssetDataGenerator:
 
     def _get_contract_data(self, category) -> dict:
         ''' Generate and return random contract data based on the asset category data'''
-        years = int(np.random.choice(np.arange(1, category["useful_life_years"] + 1)))
+        # minimum 3 years
+        years = int(np.random.choice(np.arange(3, category["useful_life_years"] + 1)))
         contract_months = years * 12
         contract_amount = (years/category["useful_life_years"]) * (category["cost"] - category["residual_value"])
 

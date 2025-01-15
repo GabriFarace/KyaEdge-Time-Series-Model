@@ -1,0 +1,16 @@
+artifact_uri: mlflow-artifacts:/431924164313492798/3b4b43ee8dce44d4b222cf788e759471/artifacts
+deleted_time: 1736434952827
+end_time: 1736434768110
+entry_point_name: ''
+experiment_id: '431924164313492798'
+lifecycle_stage: deleted
+run_id: 3b4b43ee8dce44d4b222cf788e759471
+run_name: NeuralProphet - Excessive Autoregression True lags
+run_uuid: 3b4b43ee8dce44d4b222cf788e759471
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1736434734994
+status: 3
+tags: []
+user_id: farac

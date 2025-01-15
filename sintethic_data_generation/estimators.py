@@ -29,8 +29,8 @@ class LeasingRiskScoresEstimator:
     @staticmethod
     def _get_residual_debt(asset_data, telemetry_data):
         residual_debt = []
-        current_debt = asset_data["contract_data"]["contract_amount"] - asset_data["contract_data"]["contract_upfront_payment"]
-        daily_subtraction = current_debt / len(telemetry_data)
+        current_debt = asset_data["contract_data"]["contract_amount"] - asset_data["contract_data"]["contract_upfront_payment"] + (asset_data["purchase_cost"] - asset_data["contract_data"]["contract_amount"])
+        daily_subtraction = current_debt / len(telemetry_data["mean_curve"])
         for i in range(len(telemetry_data["mean_curve"])):
             residual_debt.append(round(current_debt,2))
             current_debt = current_debt - daily_subtraction
@@ -122,10 +122,11 @@ class AssetQualityRatingScoresEstimator:
         def custom_function(x):
             ''' piecewise function that takes output values between -5 and 5'''
             if 0.01 <= x <= 1:
-                return round(5 - (50 / 9) * (1 - x), 2)
+                return round(5 - (500 / 99) * (1 - x), 2)
             elif 0 <= x < 0.01:
-                return round(50 * x - 5, 2)
+                return round(500 * x - 5, 2)
             else:
+                print(x)
                 raise ValueError("Input must be in the range [0, 1].")
 
         for i in range(len(telemetry_data["mean_curve"])):
@@ -176,7 +177,7 @@ class EsgRatingScoresEstimator:
         lower_bound_curve = []
         upper_bound_curve = []
         mean_curve = []
-        emission_factor = asset_data["city_data"]["carbon_intensity_gCO2eq_kWh"]
+        emission_factor = asset_data["city_data"]["carbon_intensity_gCO2eq_kWh"]/1000
         for i in range(len(telemetry_data["mean_curve"])):
             lower_bound_curve.append(round(emission_factor * energy_consumed["lower_bound_curve"][i], 2))
             upper_bound_curve.append(round(emission_factor * energy_consumed["upper_bound_curve"][i], 2))

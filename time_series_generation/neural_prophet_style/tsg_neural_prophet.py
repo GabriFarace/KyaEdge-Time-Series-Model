@@ -54,15 +54,15 @@ class ParametersGenerationConfigsNP:
             "unit_is_energy": True
           },
           "trend" : {
-            "max_shift_year" : 3,
-            "value_change_ratio" : 2
+            "max_shift_year" : 5,
+            "value_change_ratio" : 0.5
           },
           "seasonal" : {
             "frequencies" : [
-              {"value" :  7, "params_number": 3, "coeff_ratio_std" :  0.3, "prob" :  0.5},
-              {"value" :  30, "params_number": 5, "coeff_ratio_std" :  0.3, "prob" :  0.5},
-              {"value" :  60, "params_number": 7, "coeff_ratio_std" :  0.3, "prob" :  0.5},
-              {"value" :  365, "params_number": 10, "coeff_ratio_std" :  0.3, "prob" :  0.5}
+              {"value" :  7, "params_number": 3, "coeff_ratio_std" :  0.03, "prob" :  0.5},
+              {"value" :  30, "params_number": 5, "coeff_ratio_std" :  0.03, "prob" :  0.5},
+              {"value" :  60, "params_number": 7, "coeff_ratio_std" :  0.03, "prob" :  0.5},
+              {"value" :  365, "params_number": 10, "coeff_ratio_std" :  0.03, "prob" :  0.5}
               ]
           },
           "noise" : {
@@ -241,6 +241,17 @@ class TimeSeriesGeneratorNP:
 
         mean = self.ts.mean()
         self.ts = self.ts - mean + normalization
+
+        # Consider also modifying the standard deviation for the limits
+        current_std = self.ts.std()
+        current_ratio_std = 1
+        final_ts = self.ts
+        while current_ratio_std > 0.2 and (final_ts.min() < 0 or final_ts.max() > max_value):
+            final_ts = self.ts * (current_std * current_ratio_std/current_std)
+            final_ts = final_ts - final_ts.mean() + normalization
+            current_ratio_std -= 0.1
+        self.ts = final_ts
+
 
         # Truncate the values to the specified range [truncate_min, truncate_max]
         self.ts = np.clip(self.ts, 0, max_value)

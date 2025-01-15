@@ -1,16 +1,103 @@
 import json
-
 import numpy as np
-import pandas as pd
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 import pandas as pd
 from matplotlib import pyplot as plt
 from prophet import Prophet
-
 from sintethic_data_generation.asset_data_generation import AssetDataGenerator
 from sintethic_data_generation.estimators import AssetScoresEstimator
 from sintethic_data_generation.telemetry_data_generation import TelemetryDataGeneratorWrapper
 
+def create_monthly_average_df(curve, start_date):
+    """
+    Aggregates a Prophet-compatible DataFrame to monthly averages.
+
+    Parameters:
+    - prophet_df (pd.DataFrame): A DataFrame with columns 'ds' (dates) and 'y' (values).
+
+    Returns:
+    - pd.DataFrame: A DataFrame with monthly 'ds' and average 'y'.
+    """
+    prophet_df = create_prophet_dataframe(curve, start_date)
+    # Ensure 'ds' is a datetime type
+    prophet_df['ds'] = pd.to_datetime(prophet_df['ds'])
+
+    # Extract year and month, then group by them to calculate the average 'y'
+    monthly_df = (
+        prophet_df
+        .groupby(prophet_df['ds'].dt.to_period('M'))
+        .agg({'y': 'mean'})
+        .reset_index()
+    )
+
+    # Convert period to string for the 'ds' column (e.g., "January 2022")
+    monthly_df['ds'] = monthly_df['ds'].dt.strftime('%B %Y')
+
+    return monthly_df
+
+def compact_into_months(curve, start_date):
+    return create_monthly_average_df(curve, start_date)["y"].tolist()
+
+def reduction_monthly():
+    with open("data.json", "r") as f:
+        data = json.load(f)
+
+    for asset_data in data:
+        scores = asset_data["scores"]
+
+        scores["number_of_units"] = months_between_inclusive(asset_data["start_date"])
+
+        # ASSET QUALITY
+        scores["asset_quality_rating"]["quality_rating_curve"]["upper_bound_curve"] = compact_into_months(
+            scores["asset_quality_rating"]["quality_rating_curve"]["upper_bound_curve"], asset_data["start_date"])
+        scores["asset_quality_rating"]["quality_rating_curve"]["lower_bound_curve"] = compact_into_months(
+            scores["asset_quality_rating"]["quality_rating_curve"]["lower_bound_curve"], asset_data["start_date"])
+        scores["asset_quality_rating"]["quality_rating_curve"]["mean_curve"] = compact_into_months(
+            scores["asset_quality_rating"]["quality_rating_curve"]["mean_curve"], asset_data["start_date"])
+
+        scores["asset_quality_rating"]["operational_use_curve"]["upper_bound_curve"] = compact_into_months(
+            scores["asset_quality_rating"]["operational_use_curve"]["upper_bound_curve"], asset_data["start_date"])
+        scores["asset_quality_rating"]["operational_use_curve"]["lower_bound_curve"] = compact_into_months(
+            scores["asset_quality_rating"]["operational_use_curve"]["lower_bound_curve"], asset_data["start_date"])
+        scores["asset_quality_rating"]["operational_use_curve"]["mean_curve"] = compact_into_months(
+            scores["asset_quality_rating"]["operational_use_curve"]["mean_curve"], asset_data["start_date"])
+
+        # LEASING RISK
+        scores["leasing_risk"]["remarketing_value_curve"]["upper_bound_curve"] = compact_into_months(
+            scores["leasing_risk"]["remarketing_value_curve"]["upper_bound_curve"], asset_data["start_date"])
+        scores["leasing_risk"]["remarketing_value_curve"]["lower_bound_curve"] = compact_into_months(
+            scores["leasing_risk"]["remarketing_value_curve"]["lower_bound_curve"], asset_data["start_date"])
+        scores["leasing_risk"]["remarketing_value_curve"]["mean_curve"] = compact_into_months(
+            scores["leasing_risk"]["remarketing_value_curve"]["mean_curve"], asset_data["start_date"])
+
+        scores["leasing_risk"]["gap_curve"]["upper_bound_curve"] = compact_into_months(
+            scores["leasing_risk"]["gap_curve"]["upper_bound_curve"], asset_data["start_date"])
+        scores["leasing_risk"]["gap_curve"]["lower_bound_curve"] = compact_into_months(
+            scores["leasing_risk"]["gap_curve"]["lower_bound_curve"], asset_data["start_date"])
+        scores["leasing_risk"]["gap_curve"]["mean_curve"] = compact_into_months(
+            scores["leasing_risk"]["gap_curve"]["mean_curve"], asset_data["start_date"])
+
+        scores["leasing_risk"]["residual_debt"]["curve"] = compact_into_months(
+            scores["leasing_risk"]["residual_debt"]["curve"], asset_data["start_date"])
+
+        # ESG RATING
+        scores["esg_rating"]["footprint_curve"]["upper_bound_curve"] = compact_into_months(
+            scores["esg_rating"]["footprint_curve"]["upper_bound_curve"], asset_data["start_date"])
+        scores["esg_rating"]["footprint_curve"]["lower_bound_curve"] = compact_into_months(
+            scores["esg_rating"]["footprint_curve"]["lower_bound_curve"], asset_data["start_date"])
+        scores["esg_rating"]["footprint_curve"]["mean_curve"] = compact_into_months(
+            scores["esg_rating"]["footprint_curve"]["mean_curve"], asset_data["start_date"])
+
+        scores["esg_rating"]["energy_consumed"]["upper_bound_curve"] = compact_into_months(
+            scores["esg_rating"]["energy_consumed"]["upper_bound_curve"], asset_data["start_date"])
+        scores["esg_rating"]["energy_consumed"]["lower_bound_curve"] = compact_into_months(
+            scores["esg_rating"]["energy_consumed"]["lower_bound_curve"], asset_data["start_date"])
+        scores["esg_rating"]["energy_consumed"]["mean_curve"] = compact_into_months(
+            scores["esg_rating"]["energy_consumed"]["mean_curve"], asset_data["start_date"])
+
+    with open('data_months.json', 'w') as json_file:
+        json.dump(data, json_file, indent=4)
 
 def days_between_dates(start_date_str, end_date_str):
     # Convert the start date string to a datetime object
@@ -22,7 +109,28 @@ def days_between_dates(start_date_str, end_date_str):
     # Calculate the difference in days
     delta = end_date - start_date
 
-    return delta.days
+    return delta.days + 1
+
+def months_between_inclusive(start_date):
+    """
+    Calculates the number of months passed between a start_date and today, inclusive of the start_date and the current month.
+
+    Parameters:
+    - start_date (str): The starting date in 'YYYY-MM-DD' format.
+
+    Returns:
+    - int: The number of months passed, inclusive of the start_date and the current month.
+    """
+    # Parse the start_date into a datetime object
+    start_date = datetime.strptime(start_date, "%Y-%m-%d")
+    today = datetime.today()
+
+    # Calculate the difference in months
+    difference = relativedelta(today, start_date)
+    months_passed = difference.years * 12 + difference.months
+
+    # Include the start_date and current month
+    return months_passed + 1
 
 def plot_differences_telemetry(true_telemetry, forecasted_telemetry, today, start_date):
     # Get data
@@ -31,8 +139,8 @@ def plot_differences_telemetry(true_telemetry, forecasted_telemetry, today, star
 
     fig = plt.figure(facecolor='w', figsize=(10, 6))
     ax = fig.add_subplot(111)
-    ax.plot(df_true['ds'].values, df_true['y'], c='#0072B2')
-    ax.plot(df_forecast['ds'].values, df_forecast['y'], c='red')
+    ax.plot(df_true['ds'].values, df_true['y'], c='red')
+    ax.plot(df_forecast['ds'].values, df_forecast['y'], c='#0072B2')
     ax.fill_between(df_forecast['ds'].values, forecasted_telemetry["lower_bound_curve"],
                     forecasted_telemetry['upper_bound_curve'], color='#0072B2',
                     alpha=0.2)
@@ -116,14 +224,14 @@ def get_forecasted_telemetry(telemetry_data, future_periods, sum_maximum, today,
         "mean_curve": build_sum(telemetry_data + yhat_list, sum_maximum),
     }
 
-def generate_loop():
+def generate_loop(num_generation):
 
     asset_data_generator = AssetDataGenerator()
     telemetry_data_generator = TelemetryDataGeneratorWrapper()
     data = []
 
-    done = False
-    while not done:
+
+    for i in range(num_generation):
 
         asset_data = asset_data_generator.generate_new_asset()
 
@@ -161,13 +269,12 @@ def generate_loop():
         asset_data.pop("category_data")
         asset_data.pop("city_data")
         data.append(asset_data)
-        with open('data.json', 'w') as json_file:
-            json.dump(data, json_file, indent=4)
 
-        choice = input("Would you like to continue generating? y/n")
-        if choice == 'n':
-            done = True
+    with open('data.json', 'w') as json_file:
+        json.dump(data, json_file, indent=4)
+
+    reduction_monthly()
 
 
 if __name__ == '__main__':
-    generate_loop()
+    generate_loop(num_generation=2)

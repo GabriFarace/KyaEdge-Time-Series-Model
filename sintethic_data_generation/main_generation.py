@@ -46,8 +46,6 @@ def reduction_monthly():
     for asset_data in data:
         scores = asset_data["scores"]
 
-        scores["number_of_units"] = months_between_inclusive(asset_data["start_date"])
-
         # ASSET QUALITY
         scores["asset_quality_rating"]["quality_rating_curve"]["upper_bound_curve"] = compact_into_months(
             scores["asset_quality_rating"]["quality_rating_curve"]["upper_bound_curve"], asset_data["start_date"])
@@ -96,6 +94,7 @@ def reduction_monthly():
         scores["esg_rating"]["energy_consumed"]["mean_curve"] = compact_into_months(
             scores["esg_rating"]["energy_consumed"]["mean_curve"], asset_data["start_date"])
 
+        scores["number_of_units"] = min(months_between_inclusive(asset_data["start_date"]), len(scores["esg_rating"]["energy_consumed"]["mean_curve"]))
     with open('data_months.json', 'w') as json_file:
         json.dump(data, json_file, indent=4)
 
@@ -189,7 +188,7 @@ def get_forecasted_telemetry(telemetry_data, future_periods, sum_maximum, today,
     m.fit(df)
     future = m.make_future_dataframe(periods=future_periods)
     forecast = m.predict(future)
-    m.plot(forecast)
+    #m.plot(forecast)
 
 
     # Filter rows where 'ds' > today
@@ -237,7 +236,7 @@ def generate_loop(num_generation):
 
         telemetry_data = telemetry_data_generator.generate_telemetry_data(asset_data)
 
-        # Plot the generated time series
+        '''# Plot the generated time series
         fig, ax = plt.subplots()
         ax.plot(telemetry_data, label="Generated Time Series")
         ax.set_title("Time Series")
@@ -245,7 +244,7 @@ def generate_loop(num_generation):
         ax.set_ylabel("Value")
         ax.legend()
 
-        plt.show()
+        plt.show()'''
 
         today = pd.Timestamp.today().strftime('%Y-%m-%d')
 
@@ -262,7 +261,7 @@ def generate_loop(num_generation):
             number_of_units = days_between_dates(asset_data["start_date"], today)
             future_periods = len(telemetry_data) - number_of_units
             telemetry_input = get_forecasted_telemetry(telemetry_data[:number_of_units], future_periods, asset_data["category_data"]["useful_life_hours"], today, asset_data["start_date"])
-            plot_differences_telemetry(telemetry_data, telemetry_input, today, asset_data["start_date"])
+            #plot_differences_telemetry(telemetry_data, telemetry_input, today, asset_data["start_date"])
 
         asset_scores = AssetScoresEstimator.get_scores(asset_data, telemetry_input, number_of_units)
         asset_data["scores"] = asset_scores
@@ -277,4 +276,4 @@ def generate_loop(num_generation):
 
 
 if __name__ == '__main__':
-    generate_loop(num_generation=10)
+    generate_loop(num_generation=60)

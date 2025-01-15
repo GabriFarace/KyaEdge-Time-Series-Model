@@ -4,7 +4,8 @@ import numpy as np
 
 
 
-NUMBER_OF_LESSORS = 10
+NUMBER_OF_LESSORS = 3
+START_DATE =  "2023-01-01"
 flood_hazard_protective_measures = [
     "flood_barriers",
     "water_proofing",
@@ -84,7 +85,7 @@ class AssetDataGenerator:
             "protective_measures" : protective_measures
         }
         # Registration date (We assume asset a registered the 1 of January 2020
-        new_asset["start_date"] = "2021-01-01"  # format '%Y-%m-%d'
+        new_asset["start_date"] = START_DATE  # format '%Y-%m-%d'
 
         new_asset["category_data"] = category
         new_asset["city_data"] = city_data

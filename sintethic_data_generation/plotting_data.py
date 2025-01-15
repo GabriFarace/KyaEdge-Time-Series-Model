@@ -145,9 +145,11 @@ def plot_lower_upper(curves, start_date, name):
     plt.show()
 
 
-def plot_main():
+def plot_main(number_of_asset):
     with open("data.json", "r") as f:
         data = json.load(f)
+
+    counter = 0
 
     for asset_data in data:
         scores = asset_data["scores"]
@@ -165,5 +167,9 @@ def plot_main():
         plot_lower_upper(scores["esg_rating"]["energy_consumed"], asset_data["start_date"],
                          "Energy Consumed")
 
+        counter +=1
+        if counter == number_of_asset:
+            break
+
 if __name__ == '__main__':
-    plot_main()
+    plot_main(5)

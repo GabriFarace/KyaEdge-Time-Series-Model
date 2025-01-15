@@ -368,7 +368,7 @@ class AggregateScoresEstimator:
         low_risk_now = sum( value > 0 for value in now_quality_scores)
         six_months_quality_scores = []
         for score in scores:
-            if len(score["asset_quality_rating"]["quality_rating_curve"]["mean_curve"] > score["number_of_units"] + 6):
+            if len(score["asset_quality_rating"]["quality_rating_curve"]["mean_curve"]) > score["number_of_units"] + 6:
                 six_months_quality_scores.append(score["asset_quality_rating"]["quality_rating_curve"]["mean_curve"][score["number_of_units"] + 5])
 
         high_risk_six_months = sum( value < -2 for value in six_months_quality_scores)
@@ -438,8 +438,17 @@ class AggregateScoresEstimator:
 
         footprint_curves = np.array(footprint_curves)
         energy_consumed_curves = np.array(energy_consumed_curves)
-        footprint_curve_co2_mwh = (footprint_curves.sum(axis=0)/ energy_consumed_curves.sum(axis=0)) * 1000
-        footprint_curve_co2_mwh = footprint_curve_co2_mwh.tolist()
+
+        sum_footprint_curves = footprint_curves.sum(axis=0)
+        sum_energy_curves = energy_consumed_curves.sum(axis=0)
+        footprint_curve_co2_mwh = []
+
+        for i in range(sum_footprint_curves.size):
+            if sum_footprint_curves[i] > 0:
+                footprint_curve_co2_mwh.append(sum_footprint_curves[i] / sum_energy_curves[i] * 1000)
+            else:
+                footprint_curve_co2_mwh.append(0)
+
         footprint_curve_co2_euro_day = []
         # todo footprint_curve_co2_euro_day
 

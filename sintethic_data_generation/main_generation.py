@@ -14,6 +14,9 @@ def reduction_monthly():
     for asset_data in data:
         scores = asset_data["scores"]
 
+        asset_data["true_telemetry"] = compact_into_months(asset_data["true_telemetry"], asset_data["start_date"])
+        asset_data["forecasted_telemetry"] = compact_into_months(asset_data["forecasted_telemetry"], asset_data["start_date"])
+
         # ASSET QUALITY
         scores["asset_quality_rating"]["quality_rating_curve"]["upper_bound_curve"] = compact_into_months(
             scores["asset_quality_rating"]["quality_rating_curve"]["upper_bound_curve"], asset_data["start_date"])
@@ -105,10 +108,11 @@ def generate_loop(num_generation):
             number_of_units = days_between_dates(asset_data["start_date"], today)
             future_periods = len(telemetry_data) - number_of_units
             telemetry_input = get_forecasted_telemetry(telemetry_data[:number_of_units], future_periods, asset_data["category_data"]["useful_life_hours"], today, asset_data["start_date"])
-            #plot_differences_telemetry(telemetry_data, telemetry_input, today, asset_data["start_date"])
+            plot_differences_telemetry(telemetry_data, telemetry_input, today, asset_data["start_date"])
 
-        asset_scores = AssetScoresEstimator.get_scores(asset_data, telemetry_input, number_of_units)
-        asset_data["scores"] = asset_scores
+        asset_data["true_telemetry"] = telemetry_data
+        asset_data["forecasted_telemetry"] = telemetry_input["mean_curve"]
+        asset_data["scores"] = AssetScoresEstimator.get_scores(asset_data, telemetry_input, number_of_units)
         asset_data.pop("category_data")
         asset_data.pop("city_data")
         data.append(asset_data)
@@ -120,4 +124,4 @@ def generate_loop(num_generation):
 
 
 if __name__ == '__main__':
-    generate_loop(num_generation=60)
+    generate_loop(num_generation=5)

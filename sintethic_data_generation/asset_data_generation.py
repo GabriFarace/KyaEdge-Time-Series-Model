@@ -5,7 +5,7 @@ import numpy as np
 
 
 NUMBER_OF_LESSORS = 3
-START_DATE =  "2023-01-01"
+START_DATE =  "2021-01-01"
 flood_hazard_protective_measures = [
     "flood_barriers",
     "water_proofing",
@@ -96,7 +96,7 @@ class AssetDataGenerator:
     def _get_contract_data(self, category) -> dict:
         ''' Generate and return random contract data based on the asset category data'''
         # minimum 3 years
-        years = int(np.random.choice(np.arange(3, category["useful_life_years"] + 1)))
+        years = int(np.random.choice(np.arange(5, category["useful_life_years"] + 1)))
         contract_months = years * 12
         contract_amount = (years/category["useful_life_years"]) * (category["cost"] - category["residual_value"])
 

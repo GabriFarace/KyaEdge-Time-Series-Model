@@ -57,7 +57,7 @@
         "id": "22101632",
         "name": "Paving Equipment - Paint Stripping Machine",
         "cost": 10000,
-        "useful_life_years": 6,
+        "useful_life_years": 8,
         "useful_life_hours": 5000,
         "power_kw": 2,
         "residual_value": 1000

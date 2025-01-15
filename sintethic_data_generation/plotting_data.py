@@ -23,6 +23,37 @@ def plot_differences_telemetry(true_telemetry, forecasted_telemetry, today, star
     ax.set_xlabel('ds')
     plt.show()
 
+def plot_differences_telemetry_months(true_telemetry, forecasted_telemetry, start_date):
+    ''' Plot the difference between the true telemetry and the forecasted one'''
+    # Get data
+    df_true = create_monthly_average_df(true_telemetry,start_date)
+    df_forecast = create_monthly_average_df(forecasted_telemetry,start_date)
+
+    # Convert 'ds' back to datetime for sorting purposes
+    df_true['ds_datetime'] = pd.to_datetime(df_true['ds'], format='%B %Y')
+
+    # Sort by date
+    df_true = df_true.sort_values(by='ds_datetime')
+
+    fig = plt.figure(facecolor='w', figsize=(10, 6))
+    ax = fig.add_subplot(111)
+    ax.plot(df_true['ds_datetime'], df_true['y'], c='red', label='True (Generated) telemetry')
+    ax.plot(df_true['ds_datetime'], df_forecast['y'], c='#0072B2', label='Forecasted telemetry')
+
+
+    today = pd.Timestamp.today()
+    current_month = pd.Timestamp(today.year, today.month, 1)
+    ax.axvline(x=current_month, c='gray', lw=4, alpha=0.5)
+    ax.set_ylabel('hours')
+    ax.set_xlabel('month')
+    # Format x-axis to show months
+    plt.gca().xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%B %Y'))
+    plt.gcf().autofmt_xdate()
+
+    # Add legend
+    plt.legend()
+    plt.show()
+
 def plot_leasing_risk(remarketing_value_curve, residual_debt, gap_curve, start_date):
     ''' Plot the leasing risk curves'''
 
@@ -46,7 +77,7 @@ def plot_leasing_risk(remarketing_value_curve, residual_debt, gap_curve, start_d
     today = pd.Timestamp.today()
     current_month = pd.Timestamp(today.year, today.month, 1)
     ax.axvline(x=current_month, c='gray', lw=4, alpha=0.5)
-    ax.set_ylabel('y')
+    ax.set_ylabel('$')
     ax.set_xlabel('month')
     # Format x-axis to show months
     plt.gca().xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%B %Y'))
@@ -76,7 +107,7 @@ def plot_quality_rating(quality_rating_curve, operational_use_curve, start_date)
     today = pd.Timestamp.today()
     current_month = pd.Timestamp(today.year, today.month, 1)
     ax.axvline(x=current_month, c='gray', lw=4, alpha=0.5)
-    ax.set_ylabel('y')
+    ax.set_ylabel('quality')
     ax.set_xlabel('month')
     # Format x-axis to show months
     plt.gca().xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%B %Y'))
@@ -94,7 +125,7 @@ def plot_quality_rating(quality_rating_curve, operational_use_curve, start_date)
     today = pd.Timestamp.today()
     current_month = pd.Timestamp(today.year, today.month, 1)
     ax.axvline(x=current_month, c='gray', lw=4, alpha=0.5)
-    ax.set_ylabel('y')
+    ax.set_ylabel('operational use in %')
     ax.set_xlabel('month')
     # Format x-axis to show months
     plt.gca().xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%B %Y'))
@@ -119,8 +150,8 @@ def plot_esg_rating(footprint_curve, energy_consumed, start_date):
 
     fig = plt.figure(facecolor='w', figsize=(10, 6))
     ax = fig.add_subplot(111)
-    ax.plot(df_footprint['ds_datetime'], df_footprint['y'], c='blue', label='Footprint curve')
-    ax.plot(df_footprint['ds_datetime'], df_energy['y'], c='orange', label='Energy consumed curve')
+    ax.plot(df_footprint['ds_datetime'], df_footprint['y'], c='blue', label='Footprint curve mean Kg CO2')
+    ax.plot(df_footprint['ds_datetime'], df_energy['y'], c='orange', label='Energy consumed curve mean kWh')
 
     today = pd.Timestamp.today()
     current_month = pd.Timestamp(today.year, today.month, 1)
@@ -176,8 +207,17 @@ def plot_main(number_of_asset):
 
     counter = 0
 
+    i = 0
     for asset_data in data:
+        i = i + 1
+        if i != 2:
+            continue
+
+
+
         scores = asset_data["scores"]
+
+        plot_differences_telemetry_months(asset_data["true_telemetry"], asset_data["forecasted_telemetry"], asset_data["start_date"])
 
         plot_leasing_risk(scores["leasing_risk"]["remarketing_value_curve"], scores["leasing_risk"]["residual_debt"], scores["leasing_risk"]["gap_curve"], asset_data["start_date"])
         plot_lower_upper(scores["leasing_risk"]["remarketing_value_curve"], asset_data["start_date"], "Market Value")
@@ -192,9 +232,11 @@ def plot_main(number_of_asset):
         plot_lower_upper(scores["esg_rating"]["energy_consumed"], asset_data["start_date"],
                          "Energy Consumed")
 
+        asset_data.pop("scores")
+        print(asset_data)
         counter +=1
-        if counter == number_of_asset:
+        if counter >= number_of_asset:
             break
 
 if __name__ == '__main__':
-    plot_main(5)
+    plot_main(1)

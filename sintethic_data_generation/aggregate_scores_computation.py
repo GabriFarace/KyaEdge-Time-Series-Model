@@ -3,7 +3,9 @@ import os
 from sintethic_data_generation.estimators import AggregateScoresEstimator
 
 
+
 def aggregates_scores_main():
+    ''' Read the file data_months and compute the aggregation using the estimators.AggregateScoresEstimator'''
     with open("data_months.json", "r") as f:
         data = json.load(f)
 

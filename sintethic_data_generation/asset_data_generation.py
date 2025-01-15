@@ -116,7 +116,7 @@ class AssetDataGenerator:
         }
 
     def _get_protective_measures(self) -> dict:
-
+        ''' Generate the protective measures used for the asset'''
         number_flood = np.random.choice(np.arange(len(flood_hazard_protective_measures) + 1))
         flood_pm = []
         if number_flood > 0:

@@ -1,23 +1,9 @@
+from sintethic_data_generation.utils import days_between_month
 from time_series_generation.neural_prophet_style.tsg_neural_prophet import TimeSeriesDirectorNP, TimeSeriesGeneratorNP, ParametersGenerationConfigsNP
-from datetime import datetime
-from dateutil.relativedelta import relativedelta
-
-# Function to calculate number of days between start date and start date + number of months
-def days_between_month(start_date_str, number_of_months):
-    # Convert the start date string to a datetime object
-    start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
-
-    # Calculate the end date by adding 'number_of_months' to the start date
-    end_date = start_date + relativedelta(months=+number_of_months)
-
-    # Calculate the difference in days
-    delta = end_date - start_date
-
-    return delta.days
-
 
 
 class TelemetryDataGeneratorWrapper:
+    ''' Wrap the neural prophet time series generator and build the telemetry'''
 
     def __init__(self):
 

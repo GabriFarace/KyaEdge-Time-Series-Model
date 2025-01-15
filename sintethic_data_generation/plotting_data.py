@@ -1,9 +1,30 @@
 from matplotlib import pyplot as plt
-from main_generation import compact_into_months, create_monthly_average_df
 import pandas as pd
 import json
 
+from sintethic_data_generation.utils import create_prophet_dataframe, create_monthly_average_df
+
+
+def plot_differences_telemetry(true_telemetry, forecasted_telemetry, today, start_date):
+    ''' Plot the difference between the true telemetry and the forecasted one'''
+    # Get data
+    df_true = create_prophet_dataframe(true_telemetry,start_date)
+    df_forecast = create_prophet_dataframe(forecasted_telemetry["mean_curve"],start_date)
+
+    fig = plt.figure(facecolor='w', figsize=(10, 6))
+    ax = fig.add_subplot(111)
+    ax.plot(df_true['ds'].values, df_true['y'], c='red')
+    ax.plot(df_forecast['ds'].values, df_forecast['y'], c='#0072B2')
+    ax.fill_between(df_forecast['ds'].values, forecasted_telemetry["lower_bound_curve"],
+                    forecasted_telemetry['upper_bound_curve'], color='#0072B2',
+                    alpha=0.2)
+    ax.axvline(x=pd.to_datetime(today), c='gray', lw=4, alpha=0.5)
+    ax.set_ylabel('y')
+    ax.set_xlabel('ds')
+    plt.show()
+
 def plot_leasing_risk(remarketing_value_curve, residual_debt, gap_curve, start_date):
+    ''' Plot the leasing risk curves'''
 
     # Get data
     df_market = create_monthly_average_df(remarketing_value_curve["mean_curve"],start_date)
@@ -36,6 +57,7 @@ def plot_leasing_risk(remarketing_value_curve, residual_debt, gap_curve, start_d
     plt.show()
 
 def plot_quality_rating(quality_rating_curve, operational_use_curve, start_date):
+    ''' Plot the quality rating curves'''
 
     # Get data
     df_quality = create_monthly_average_df(quality_rating_curve["mean_curve"],start_date)
@@ -83,6 +105,7 @@ def plot_quality_rating(quality_rating_curve, operational_use_curve, start_date)
     plt.show()
 
 def plot_esg_rating(footprint_curve, energy_consumed, start_date):
+    ''' Plot the esg rating curves'''
 
     # Get data
     df_footprint = create_monthly_average_df(footprint_curve["mean_curve"],start_date)
@@ -113,6 +136,7 @@ def plot_esg_rating(footprint_curve, energy_consumed, start_date):
     plt.show()
 
 def plot_lower_upper(curves, start_date, name):
+    ''' Plot the lower, mean and upper bound of the curves given in input'''
     # Get data
     df = create_monthly_average_df(curves["mean_curve"],start_date)
     df_lower = create_monthly_average_df(curves["lower_bound_curve"],start_date)
@@ -146,6 +170,7 @@ def plot_lower_upper(curves, start_date, name):
 
 
 def plot_main(number_of_asset):
+    ''' Plot the data for a number_of_asset from the data.json file'''
     with open("data.json", "r") as f:
         data = json.load(f)
 

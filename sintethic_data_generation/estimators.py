@@ -1,23 +1,14 @@
-from datetime import datetime
-import pandas as pd
 import numpy as np
+from prophet import Prophet
 
-def days_between_dates(start_date_str, end_date_str):
-    # Convert the start date string to a datetime object
-    start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+from sintethic_data_generation.utils import create_prophet_dataframe
 
-    # Calculate the end date by adding 'number_of_months' to the start date
-    end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
-
-    # Calculate the difference in days
-    delta = end_date - start_date
-
-    return delta.days
 
 class LeasingRiskScoresEstimator:
 
     @staticmethod
     def get_leasing_risk_scores(asset_data, telemetry_data, number_of_units):
+        '''Return the scores associated to the Leasing Risk task'''
         remarketing_value_curve = LeasingRiskScoresEstimator._get_remarketing_value_curve(asset_data, telemetry_data)
         residual_debt = LeasingRiskScoresEstimator._get_residual_debt(asset_data, telemetry_data)
         return {
@@ -26,8 +17,10 @@ class LeasingRiskScoresEstimator:
             "gap_curve" : LeasingRiskScoresEstimator._get_gap_curve(remarketing_value_curve, residual_debt)
         }
 
+
     @staticmethod
     def _get_residual_debt(asset_data, telemetry_data):
+        ''' Return the residual debt : account also for the difference cost - contract amount'''
         residual_debt = []
         current_debt = asset_data["contract_data"]["contract_amount"] - asset_data["contract_data"]["contract_upfront_payment"] + (asset_data["purchase_cost"] - asset_data["contract_data"]["contract_amount"])
         daily_subtraction = current_debt / len(telemetry_data["mean_curve"])
@@ -39,6 +32,9 @@ class LeasingRiskScoresEstimator:
 
     @staticmethod
     def _get_remarketing_value_curve(asset_data, telemetry_data):
+        ''' Return the market value using the cost approach'''
+
+        #TODO no obsolescence here
         lower_bound_curve = []
         upper_bound_curve = []
         mean_curve = []
@@ -64,6 +60,7 @@ class LeasingRiskScoresEstimator:
 
     @staticmethod
     def _get_gap_curve(remarketing_value_curve, residual_debt):
+        ''' Return the gap curve as difference between the remarketing value and the residual debt'''
         return {
             "lower_bound_curve" : (np.array(remarketing_value_curve["lower_bound_curve"]) - np.array(residual_debt["curve"])).tolist(),
             "mean_curve" : (np.array(remarketing_value_curve["mean_curve"]) - np.array(residual_debt["curve"])).tolist(),
@@ -75,6 +72,7 @@ class AssetQualityRatingScoresEstimator:
 
     @staticmethod
     def get_asset_quality_rating_scores(asset_data, telemetry_data, number_of_units):
+        ''' Return the  scores associated to the quality rating task'''
         operational_use_curve = AssetQualityRatingScoresEstimator._get_operational_use_curve(asset_data, telemetry_data)
         quality_rating_curve = AssetQualityRatingScoresEstimator._get_quality_rating_curve(asset_data, telemetry_data, operational_use_curve)
         return {
@@ -84,6 +82,9 @@ class AssetQualityRatingScoresEstimator:
 
     @staticmethod
     def _get_operational_use_curve(asset_data, telemetry_data):
+        ''' Return the operational use curve'''
+
+        # TODO baseline is fixed and set to useful_life/number of days
         lower_bound_curve = []
         upper_bound_curve = []
         mean_curve = []
@@ -112,7 +113,7 @@ class AssetQualityRatingScoresEstimator:
 
     @staticmethod
     def _get_quality_rating_curve(asset_data, telemetry_data, operational_use_curve):
-        ''' Quality is the normalized [-5,5] ratio between (1/average history of operational use)'''
+        ''' Return the quality rating curve. Quality is the normalized [-5,5] ratio between (1/average history of operational use)'''
         lower_bound_curve = []
         upper_bound_curve = []
         mean_curve = []
@@ -120,7 +121,7 @@ class AssetQualityRatingScoresEstimator:
 
 
         def custom_function(x):
-            ''' piecewise function that takes output values between -5 and 5'''
+            ''' piecewise function that return output values between -5 and 5'''
             if 0.01 <= x <= 1:
                 return round(5 - (500 / 99) * (1 - x), 2)
             elif 0 <= x < 0.01:
@@ -147,6 +148,7 @@ class EsgRatingScoresEstimator:
 
     @staticmethod
     def get_esg_ratings_scores(asset_data, telemetry_data, number_of_units):
+        ''' Return the scores associated to the ESG rating task'''
         energy_consumed = EsgRatingScoresEstimator._get_energy_consumed(asset_data, telemetry_data)
         return {
             "footprint_curve" : EsgRatingScoresEstimator._get_footprint_curve(asset_data, telemetry_data, energy_consumed),
@@ -156,6 +158,7 @@ class EsgRatingScoresEstimator:
 
     @staticmethod
     def _get_energy_consumed(asset_data, telemetry_data):
+        ''' Return the energy consumed curve by multiplying the telemetry bu the power'''
         lower_bound_curve = []
         upper_bound_curve = []
         mean_curve = []
@@ -173,7 +176,8 @@ class EsgRatingScoresEstimator:
 
     @staticmethod
     def _get_footprint_curve(asset_data, telemetry_data, energy_consumed):
-        ''' WRONG Consider Constant Emission Factor TODO'''
+        ''' Return the footprint curve'''
+        # todo WRONG Consider Constant Emission Factor
         lower_bound_curve = []
         upper_bound_curve = []
         mean_curve = []
@@ -192,6 +196,7 @@ class EsgRatingScoresEstimator:
 
     @staticmethod
     def _get_environmental_risk_indicators(asset_data):
+        ''' Return the environmental risk indicators for the asset'''
         protective_measures = asset_data["esg_inputs"]["protective_measures"]
 
         def get_final_risk(risk, protective_measures_number):
@@ -221,6 +226,7 @@ class StrategyAdvisorScoresEstimator:
 
     @staticmethod
     def get_strategy_advisors_scores(leasing_risk_scores, asset_quality_rating_scores, esg_ratings_scores, number_of_units):
+        ''' Return the scores associated to the Strategy Advisors task'''
         asset_quality_rating_task = StrategyAdvisorScoresEstimator._get_quality_rating_advice(asset_quality_rating_scores, number_of_units)
         leasing_risk_task = StrategyAdvisorScoresEstimator._get_leasing_risk_advice(leasing_risk_scores, number_of_units)
         esg_rating_task = StrategyAdvisorScoresEstimator._get_esg_rating_advice(esg_ratings_scores, number_of_units)
@@ -251,7 +257,7 @@ class StrategyAdvisorScoresEstimator:
 
     @staticmethod
     def _get_quality_rating_advice(asset_quality_rating_scores, number_of_units):
-        ''' Check the quality now and at the end of the contract'''
+        ''' Return the quality rating task advice. Check the quality now and at the end of the contract'''
         low_quality_now = asset_quality_rating_scores["quality_rating_curve"]["mean_curve"][number_of_units - 1] < 0
         low_quality_end = asset_quality_rating_scores["quality_rating_curve"]["mean_curve"][-1] < 0
 
@@ -275,7 +281,7 @@ class StrategyAdvisorScoresEstimator:
 
     @staticmethod
     def _get_leasing_risk_advice(leasing_risk_scores, number_of_units):
-        ''' Check the GAP now and at the end of the contract'''
+        ''' Return the leasing risk advice. Check the GAP now and at the end of the contract'''
         low_quality_now = leasing_risk_scores["gap_curve"]["mean_curve"][number_of_units - 1] < 0
         low_quality_end = leasing_risk_scores["gap_curve"]["mean_curve"][-1] < 0
 
@@ -299,7 +305,7 @@ class StrategyAdvisorScoresEstimator:
 
     @staticmethod
     def _get_esg_rating_advice(esg_ratings_scores, number_of_units):
-        ''' Check the environmental risk indicators  (if some hazard has high risk or not) now and at the end of the contract'''
+        ''' Return the esg rating advice. Check the environmental risk indicators  (if some hazard has high risk or not) now and at the end of the contract'''
 
         indicators = [
             esg_ratings_scores["environmental_risk_indicators"]["flood_hazard"],
@@ -326,6 +332,7 @@ class AssetScoresEstimator:
 
     @staticmethod
     def get_scores(asset_data, telemetry_data, number_of_units):
+        ''' Return the scores of the 4 task (Leasing Risk, Asset Quality Rating, ESG Rating and Strategy Advisor)'''
         leasing_risk = LeasingRiskScoresEstimator.get_leasing_risk_scores(asset_data, telemetry_data, number_of_units)
 
         asset_quality_rating = AssetQualityRatingScoresEstimator.get_asset_quality_rating_scores(asset_data, telemetry_data, number_of_units)
@@ -347,6 +354,7 @@ class AggregateScoresEstimator:
 
     @staticmethod
     def aggregate_scores_lessor(assets_list, lessor_id):
+        ''' Return the aggregates scores for the given lessor'''
         scores = [asset["scores"] for asset in assets_list]
 
         return {
@@ -360,7 +368,7 @@ class AggregateScoresEstimator:
 
     @staticmethod
     def _get_aggregates_asset_quality_rating(scores):
-        ''' HIGH if less than -2, MEDIUM if between -2 and 0, LOW if > 0'''
+        ''' Return the aggregates asset quality rating scores. HIGH if less than -2, MEDIUM if between -2 and 0, LOW if > 0'''
 
         now_quality_scores = [score["asset_quality_rating"]["quality_rating_curve"]["mean_curve"][score["number_of_units"] - 1] for score in scores]
         high_risk_now = sum( value < -2 for value in now_quality_scores)
@@ -386,6 +394,7 @@ class AggregateScoresEstimator:
 
     @staticmethod
     def _get_aggregates_esg_rating(scores):
+        ''' Return the aggregates esg rating scores'''
 
         # First extract the environmental risk indicators
         number_flood = {"low": 0, "medium": 0, "high": 0}
@@ -483,6 +492,7 @@ class AggregateScoresEstimator:
 
     @staticmethod
     def _get_aggregates_leasing_risk(scores):
+        ''' Return the aggregates leasing risk scores'''
         gap_assets_today = []
         gap_assets_six_months = []
 
@@ -521,6 +531,7 @@ class AggregateScoresEstimator:
 
     @staticmethod
     def _get_aggregates_strategy_advisor(scores):
+        ''' Return the aggregates strategy advisor scores'''
         priority_values = [score["strategy_advisor"]["priority_value"] for score in scores]
 
         number_high_priority = sum(v == 'high_priority_critical_end_of_lease_action' for v in priority_values)
@@ -534,6 +545,53 @@ class AggregateScoresEstimator:
             "number_assets_usage_to_be_investigated" : number_assets_usage_to_be_investigated,
             "number_current_situation_under_control" : number_current_situation_under_control
         }
+
+
+
+def get_forecasted_telemetry(telemetry_data, future_periods, sum_maximum, today, start_date=None):
+    ''' Use prophet to forecast the future telemetry'''
+    df = create_prophet_dataframe(telemetry_data, start_date)
+    m = Prophet(n_changepoints=200)
+    m.add_seasonality(name='monthly', period=30, fourier_order=5)
+    m.add_seasonality(name='bimonthly', period=60, fourier_order=7)
+    m.fit(df)
+    future = m.make_future_dataframe(periods=future_periods)
+    forecast = m.predict(future)
+    #m.plot(forecast)
+
+
+    # Filter rows where 'ds' > today
+    filtered_df = forecast[forecast['ds'] > today]
+
+    # Extract the columns as lists
+    yhat_list = np.clip(filtered_df['yhat'], 0, 24).tolist()
+    yhat_lower_list = np.clip(filtered_df['yhat_lower'], 0, 24).tolist()
+    yhat_upper_list = np.clip(filtered_df['yhat_upper'], 0, 24).tolist()
+
+
+
+    def build_sum(telemetry, sum_value):
+        '''' Constraint the sum of the time series to be sum_value by truncating to 0 the series from the time step where the sum is reached'''
+
+        telemetry_copy = np.array(telemetry)
+        # Step 1: Compute the cumulative sum
+        cumulative_sum = np.cumsum(telemetry_copy)
+
+        # Step 2: Find the index where cumulative sum exceeds the limit
+        truncation_index = np.argmax(cumulative_sum > sum_value) if np.any(cumulative_sum > sum_value) else -1
+
+        # Step 3: Truncate the series
+        if truncation_index != -1:  # Only truncate if the limit is surpassed
+            telemetry_copy[truncation_index:] = 0
+
+        return telemetry_copy.tolist()
+
+    return  {
+        "lower_bound_curve": build_sum(telemetry_data + yhat_lower_list, sum_maximum),
+        "upper_bound_curve": build_sum(telemetry_data + yhat_upper_list, sum_maximum),
+        "mean_curve": build_sum(telemetry_data + yhat_list, sum_maximum),
+    }
+
 
 
 

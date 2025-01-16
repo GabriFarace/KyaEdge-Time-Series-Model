@@ -1,5 +1,7 @@
 import json
 import pandas as pd
+from waitress.adjustments import asset
+
 from sintethic_data_generation.asset_data_generation import AssetDataGenerator
 from sintethic_data_generation.estimators import AssetScoresEstimator, get_forecasted_telemetry
 from sintethic_data_generation.plotting_data import plot_differences_telemetry
@@ -110,8 +112,11 @@ def generate_loop(num_generation):
             telemetry_input = get_forecasted_telemetry(telemetry_data[:number_of_units], future_periods, asset_data["category_data"]["useful_life_hours"], today, asset_data["start_date"])
             plot_differences_telemetry(telemetry_data, telemetry_input, today, asset_data["start_date"])
 
-        asset_data["true_telemetry"] = telemetry_data
-        asset_data["forecasted_telemetry"] = telemetry_input["mean_curve"]
+        #asset_data["true_telemetry"] = telemetry_data
+        #asset_data["forecasted_telemetry"] = telemetry_input["mean_curve"]
+        asset_data["asset_specific_expected_yearly_usage"] = AssetScoresEstimator.get_asset_expected_usage(asset_data, telemetry_data[:number_of_units])
+        asset_data["standard_asset_average_expected_yearly_usage"] = AssetScoresEstimator.get_standard_average_asset_expected_usage(asset_data)
+
         asset_data["scores"] = AssetScoresEstimator.get_scores(asset_data, telemetry_input, number_of_units)
         asset_data.pop("category_data")
         asset_data.pop("city_data")

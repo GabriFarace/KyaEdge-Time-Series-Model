@@ -36,7 +36,7 @@ seismic_hazard_protective_measures = [
     "sufficient_distance_from_weak_points"
 ]
 
-with open("cities_data.json", "r") as f:
+with open("cities_data2.json", "r") as f:
     cities_data = json.load(f)
 
 with open("categories.json", "r") as f:

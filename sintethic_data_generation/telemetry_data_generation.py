@@ -17,7 +17,7 @@ class TelemetryDataGeneratorWrapper:
         self.time_series_generator.reset()
 
         # Build the baseline
-        num_units = days_between_month(asset_data["start_date"], asset_data["contract_data"]["contract_months"])
+        num_units = 365 * asset_data["category_data"]["useful_life_years"]
         baseline_value = asset_data["category_data"]["useful_life_hours"] / num_units
         max_value = 24
         sum_value = asset_data["category_data"]["useful_life_hours"]

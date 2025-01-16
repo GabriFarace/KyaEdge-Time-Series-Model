@@ -1,5 +1,6 @@
 import numpy as np
 from prophet import Prophet
+import math
 
 from sintethic_data_generation.utils import create_prophet_dataframe
 
@@ -88,7 +89,8 @@ class AssetQualityRatingScoresEstimator:
         lower_bound_curve = []
         upper_bound_curve = []
         mean_curve = []
-        baseline = asset_data["category_data"]["useful_life_hours"] / len(telemetry_data["mean_curve"])
+        num_units = 365 * asset_data["category_data"]["useful_life_years"]
+        baseline = asset_data["category_data"]["useful_life_hours"] / num_units
         for i in range(len(telemetry_data["mean_curve"])):
             if telemetry_data["lower_bound_curve"][i] > 0:
                 lower_bound_curve.append(int((telemetry_data["lower_bound_curve"][i]/baseline) * 100))
@@ -118,17 +120,19 @@ class AssetQualityRatingScoresEstimator:
         upper_bound_curve = []
         mean_curve = []
         i_max = 0
-
+        baseline = asset_data["category_data"]["useful_life_hours"] / len(telemetry_data["mean_curve"])
+        max_ou = math.ceil((24 / baseline) * 100)
+        h = 1 / max_ou
 
         def custom_function(x):
             ''' piecewise function that return output values between -5 and 5'''
             if 0.01 <= x <= 1:
-                return round(5 - (500 / 99) * (1 - x), 2)
+                return round(5 * ( (x - 0.01) / 0.99), 2)
             elif 0 <= x < 0.01:
-                return round(500 * x - 5, 2)
+                return round(-5 + ( (5 / ( 0.01 - h) ) * (x - h)), 2)
             else:
                 print(x)
-                raise ValueError("Input must be in the range [0, 1].")
+                raise ValueError(f"Input must be in the range [{h}, 1].")
 
         for i in range(len(telemetry_data["mean_curve"])):
             lower_bound_curve.append(custom_function(1/np.mean(operational_use_curve["lower_bound_curve"][0 : i_max + 1])))
@@ -205,20 +209,32 @@ class EsgRatingScoresEstimator:
             # LOW 1 or less than 0
             # MEDIUM 2
             # HIGH 3
-            risk_map = {"low" : 1, "medium" : 2, "high" : 3}
-            final_risk = risk_map[risk] - risk_lowered_by
-            if final_risk <= 1:
-                return "low"
-            elif final_risk == 2:
-                return "medium"
+            final_risk = risk - risk_lowered_by
+
+            # If no protective measures, increase risk level
+            if protective_measures_number == 0:
+                final_risk = final_risk + 1
+
+            if final_risk <= 0:
+                return 0
+            elif final_risk >= 5:
+                return 5
             else:
-                return "high"
+                return final_risk
+
+        flood_hazard = get_final_risk(asset_data["city_data"]["flood_hazard"], len(protective_measures["flood_hazard_protective_measures"]))
+        landslide_hazard = get_final_risk(asset_data["city_data"]["landslide_hazard"], len(protective_measures["landslide_hazard_protective_measures"]))
+        climatic_hazard = get_final_risk(asset_data["city_data"]["climatic_hazard"], len(protective_measures["climatic_hazard_protective_measures"]))
+        seismic_hazard = get_final_risk(asset_data["city_data"]["seismic_hazard"], len(protective_measures["seismic_hazard_protective_measures"]))
+
+        summary_rating = int((flood_hazard + landslide_hazard + climatic_hazard + seismic_hazard)/4)
 
         return {
-            "flood_hazard" : get_final_risk(asset_data["city_data"]["flood_hazard"], len(protective_measures["flood_hazard_protective_measures"])),
-            "landslide_hazard" : get_final_risk(asset_data["city_data"]["landslide_hazard"], len(protective_measures["landslide_hazard_protective_measures"])),
-            "climatic_hazard" : get_final_risk(asset_data["city_data"]["climatic_hazard"], len(protective_measures["climatic_hazard_protective_measures"])),
-            "seismic_hazard" : get_final_risk(asset_data["city_data"]["seismic_hazard"], len(protective_measures["seismic_hazard_protective_measures"]))
+            "flood_hazard" : flood_hazard,
+            "landslide_hazard" : landslide_hazard,
+            "climatic_hazard" : climatic_hazard,
+            "seismic_hazard" : seismic_hazard,
+            "summary_rating" : summary_rating
         }
 
 
@@ -240,13 +256,13 @@ class StrategyAdvisorScoresEstimator:
             count += 1
 
         if count == 0:
-            priority = "current_situation_under_control"
+            priority = 0
         elif count == 1:
-            priority = "asset_with_usage_trend_to_be_investigated"
+            priority = 1
         elif count == 2:
-            priority = "low_priority_end_of_lease_suggestion"
+            priority = 3
         else:
-            priority = "high_priority_critical_end_of_lease_action"
+            priority = 5
 
         return {
             "priority_value" : priority,
@@ -349,6 +365,24 @@ class AssetScoresEstimator:
             "strategy_advisor": strategy_advisor
         }
 
+    @staticmethod
+    def get_asset_expected_usage(asset_data, telemetry_history):
+        hours_on_duty = round(float(np.mean(telemetry_history) * 365 ), 2)
+        return {
+            "hours_on_duty" : hours_on_duty,
+            "kwh" : int(hours_on_duty * asset_data["category_data"]["power_kw"])
+        }
+
+    @staticmethod
+    def get_standard_average_asset_expected_usage(asset_data):
+        num_units = 365 * asset_data["category_data"]["useful_life_years"]
+        baseline = asset_data["category_data"]["useful_life_hours"] / num_units
+        hours_on_duty = int(baseline) * 365
+        return {
+            "hours_on_duty" : hours_on_duty,
+            "kwh" : int(hours_on_duty * asset_data["category_data"]["power_kw"])
+        }
+
 
 class AggregateScoresEstimator:
 
@@ -397,10 +431,10 @@ class AggregateScoresEstimator:
         ''' Return the aggregates esg rating scores'''
 
         # First extract the environmental risk indicators
-        number_flood = {"low": 0, "medium": 0, "high": 0}
-        number_landslide = {"low": 0, "medium": 0, "high": 0}
-        number_climatic = {"low": 0, "medium": 0, "high": 0}
-        number_seismic = {"low": 0, "medium": 0, "high": 0}
+        number_flood = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+        number_landslide = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+        number_climatic = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+        number_seismic = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
         for score in scores:
             indicators = score["esg_rating"]["environmental_risk_indicators"]
             number_flood[indicators["flood_hazard"]] += 1
@@ -467,24 +501,36 @@ class AggregateScoresEstimator:
             "footprint_curve_co2_euro_day" : footprint_curve_co2_euro_day,
             "environmental_risk_indicators" : {
                 "flood_hazard" :{
-                    "low" : number_flood["low"],
-                    "medium" : number_flood["medium"],
-                    "high" : number_flood["high"]
+                    0 : number_flood[0],
+                    1 : number_flood[1],
+                    2 : number_flood[2],
+                    3 : number_flood[3],
+                    4 : number_flood[4],
+                    5 : number_flood[5]
                 },
                 "landslide_hazard" :{
-                    "low" : number_landslide["low"],
-                    "medium" : number_landslide["medium"],
-                    "high" : number_landslide["high"]
+                    0 : number_landslide[0],
+                    1 : number_landslide[1],
+                    2 : number_landslide[2],
+                    3 : number_landslide[3],
+                    4 : number_landslide[4],
+                    5 : number_landslide[5]
                 },
                 "climatic" :{
-                    "low" : number_climatic["low"],
-                    "medium" : number_climatic["medium"],
-                    "high" : number_climatic["high"]
+                    0 : number_climatic[0],
+                    1 : number_climatic[1],
+                    2 : number_climatic[2],
+                    3 : number_climatic[3],
+                    4 : number_climatic[4],
+                    5 : number_climatic[5]
                 },
                 "seismic" :{
-                    "low" : number_seismic["low"],
-                    "medium" : number_seismic["medium"],
-                    "high" : number_seismic["high"]
+                    0 : number_seismic[0],
+                    1 : number_seismic[1],
+                    2 : number_seismic[2],
+                    3 : number_seismic[3],
+                    4 : number_seismic[4],
+                    5 : number_seismic[5]
                 }
             }
         }
@@ -534,10 +580,10 @@ class AggregateScoresEstimator:
         ''' Return the aggregates strategy advisor scores'''
         priority_values = [score["strategy_advisor"]["priority_value"] for score in scores]
 
-        number_high_priority = sum(v == 'high_priority_critical_end_of_lease_action' for v in priority_values)
-        number_low_priority = sum(v == 'low_priority_end_of_lease_suggestion' for v in priority_values)
-        number_assets_usage_to_be_investigated = sum(v == 'asset_with_usage_trend_to_be_investigated' for v in priority_values)
-        number_current_situation_under_control = sum(v == 'current_situation_under_control' for v in priority_values)
+        number_high_priority = sum(v == 5 for v in priority_values)
+        number_low_priority = sum(v == 3 for v in priority_values)
+        number_assets_usage_to_be_investigated = sum(v == 1 for v in priority_values)
+        number_current_situation_under_control = sum(v == 0 for v in priority_values)
 
         return {
             "number_high_priority" : number_high_priority,

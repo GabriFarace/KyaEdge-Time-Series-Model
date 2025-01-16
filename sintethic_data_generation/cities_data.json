@@ -3,160 +3,160 @@
         "name": "Milano",
         "lat": 45.465422,
         "lon": 9.185924,
-        "flood_hazard": "low",
-        "landslide_hazard": "low",
-        "climatic_hazard": "low",
-        "seismic_hazard": "medium",
-        "carbon_intensity_gCO2eq_kWh": 337
+        "flood_hazard": 2,
+        "landslide_hazard": 1,
+        "climatic_hazard": 2,
+        "seismic_hazard": 3,
+        "carbon_intensity_gCO2eq_kWh": 335
     },
     {
         "name": "Torino",
         "lat": 45.070312,
         "lon": 7.686857,
-        "flood_hazard": "low",
-        "landslide_hazard": "high",
-        "climatic_hazard": "medium",
-        "seismic_hazard": "medium",
-        "carbon_intensity_gCO2eq_kWh": 337
+        "flood_hazard": 2,
+        "landslide_hazard": 4,
+        "climatic_hazard": 3,
+        "seismic_hazard": 3,
+        "carbon_intensity_gCO2eq_kWh": 335
     },
     {
         "name": "Genova",
         "lat": 44.407145,
         "lon": 8.934738,
-        "flood_hazard": "low",
-        "landslide_hazard": "low",
-        "climatic_hazard": "low",
-        "seismic_hazard": "medium",
-        "carbon_intensity_gCO2eq_kWh": 337
+        "flood_hazard": 1,
+        "landslide_hazard": 1,
+        "climatic_hazard": 1,
+        "seismic_hazard": 3,
+        "carbon_intensity_gCO2eq_kWh": 335
     },
     {
         "name": "Venezia",
         "lat": 45.440847,
         "lon": 12.315515,
-        "flood_hazard": "high",
-        "landslide_hazard": "low",
-        "climatic_hazard": "high",
-        "seismic_hazard": "medium",
-        "carbon_intensity_gCO2eq_kWh": 337
+        "flood_hazard": 4,
+        "landslide_hazard": 1,
+        "climatic_hazard": 4,
+        "seismic_hazard": 3,
+        "carbon_intensity_gCO2eq_kWh": 335
     },
     {
         "name": "Trento",
         "lat": 46.074779,
         "lon": 11.121749,
-        "flood_hazard": "low",
-        "landslide_hazard": "high",
-        "climatic_hazard": "low",
-        "seismic_hazard": "medium",
-        "carbon_intensity_gCO2eq_kWh": 337
+        "flood_hazard": 1,
+        "landslide_hazard": 4,
+        "climatic_hazard": 2,
+        "seismic_hazard": 3,
+        "carbon_intensity_gCO2eq_kWh": 335
     },
     {
         "name": "Bologna",
         "lat": 44.494887,
         "lon": 11.342616,
-        "flood_hazard": "high",
-        "landslide_hazard": "medium",
-        "climatic_hazard": "low",
-        "seismic_hazard": "medium",
-        "carbon_intensity_gCO2eq_kWh": 337
+        "flood_hazard": 4,
+        "landslide_hazard": 3,
+        "climatic_hazard": 2,
+        "seismic_hazard": 3,
+        "carbon_intensity_gCO2eq_kWh": 335
     },
     {
         "name": "Roma",
         "lat": 41.902783,
         "lon": 12.496365,
-        "flood_hazard": "low",
-        "landslide_hazard": "medium",
-        "climatic_hazard": "low",
-        "seismic_hazard": "medium",
-        "carbon_intensity_gCO2eq_kWh": 263
+        "flood_hazard": 2,
+        "landslide_hazard": 3,
+        "climatic_hazard": 2,
+        "seismic_hazard": 3,
+        "carbon_intensity_gCO2eq_kWh": 360
     },
     {
         "name": "Firenze",
         "lat": 43.76956,
         "lon": 11.255814,
-        "flood_hazard": "medium",
-        "landslide_hazard": "high",
-        "climatic_hazard": "low",
-        "seismic_hazard": "medium",
-        "carbon_intensity_gCO2eq_kWh": 219
+        "flood_hazard": 3,
+        "landslide_hazard": 4,
+        "climatic_hazard": 2,
+        "seismic_hazard": 3,
+        "carbon_intensity_gCO2eq_kWh": 399
     },
     {
         "name": "Napoli",
         "lat": 40.851775,
         "lon": 14.268124,
-        "flood_hazard": "low",
-        "landslide_hazard": "high",
-        "climatic_hazard": "low",
-        "seismic_hazard": "medium",
-        "carbon_intensity_gCO2eq_kWh": 263
+        "flood_hazard": 1,
+        "landslide_hazard": 4,
+        "climatic_hazard": 2,
+        "seismic_hazard": 3,
+        "carbon_intensity_gCO2eq_kWh": 360
     },
     {
         "name": "Cosenza",
         "lat": 39.298263,
         "lon": 16.253736,
-        "flood_hazard": "low",
-        "landslide_hazard": "medium",
-        "climatic_hazard": "low",
-        "seismic_hazard": "medium",
-        "carbon_intensity_gCO2eq_kWh": 249
+        "flood_hazard": 2,
+        "landslide_hazard": 3,
+        "climatic_hazard": 2,
+        "seismic_hazard": 3,
+        "carbon_intensity_gCO2eq_kWh": 411
     },
     {
         "name": "Catania",
         "lat": 37.507877,
         "lon": 15.08303,
-        "flood_hazard": "low",
-        "landslide_hazard": "medium",
-        "climatic_hazard": "low",
-        "seismic_hazard": "medium",
-        "carbon_intensity_gCO2eq_kWh": 176
+        "flood_hazard": 2,
+        "landslide_hazard": 3,
+        "climatic_hazard": 1,
+        "seismic_hazard": 3,
+        "carbon_intensity_gCO2eq_kWh": 360
     },
     {
         "name": "Palermo",
         "lat": 38.115688,
         "lon": 13.361267,
-        "flood_hazard": "low",
-        "landslide_hazard": "medium",
-        "climatic_hazard": "low",
-        "seismic_hazard": "medium",
-        "carbon_intensity_gCO2eq_kWh": 176
+        "flood_hazard": 1,
+        "landslide_hazard": 3,
+        "climatic_hazard": 1,
+        "seismic_hazard": 3,
+        "carbon_intensity_gCO2eq_kWh": 360
     },
     {
         "name": "Bari",
         "lat": 41.117143,
         "lon": 16.871871,
-        "flood_hazard": "low",
-        "landslide_hazard": "low",
-        "climatic_hazard": "low",
-        "seismic_hazard": "medium",
-        "carbon_intensity_gCO2eq_kWh": 249
+        "flood_hazard": 1,
+        "landslide_hazard": 1,
+        "climatic_hazard": 1,
+        "seismic_hazard": 3,
+        "carbon_intensity_gCO2eq_kWh": 411
     },
     {
         "name": "Pescara",
         "lat": 42.46179,
         "lon": 14.21609,
-        "flood_hazard": "low",
-        "landslide_hazard": "high",
-        "climatic_hazard": "low",
-        "seismic_hazard": "medium",
-        "carbon_intensity_gCO2eq_kWh": 263
+        "flood_hazard": 2,
+        "landslide_hazard": 4,
+        "climatic_hazard": 2,
+        "seismic_hazard": 3,
+        "carbon_intensity_gCO2eq_kWh": 360
     },
     {
         "name": "Ancona",
         "lat": 43.61583,
         "lon": 13.518915,
-        "flood_hazard": "low",
-        "landslide_hazard": "medium",
-        "climatic_hazard": "low",
-        "seismic_hazard": "medium",
-        "carbon_intensity_gCO2eq_kWh": 219
+        "flood_hazard": 1,
+        "landslide_hazard": 3,
+        "climatic_hazard": 2,
+        "seismic_hazard": 3,
+        "carbon_intensity_gCO2eq_kWh": 399
     },
     {
         "name": "Aosta",
         "lat": 45.734955,
         "lon": 7.313076,
-        "flood_hazard": "low",
-        "landslide_hazard": "low",
-        "climatic_hazard": "high",
-        "seismic_hazard": "medium",
-        "carbon_intensity_gCO2eq_kWh": 337
+        "flood_hazard": 1,
+        "landslide_hazard": 1,
+        "climatic_hazard": 4,
+        "seismic_hazard": 3,
+        "carbon_intensity_gCO2eq_kWh": 335
     }
 ]

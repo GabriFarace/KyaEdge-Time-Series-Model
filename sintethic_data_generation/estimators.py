@@ -23,8 +23,9 @@ class LeasingRiskScoresEstimator:
     def _get_residual_debt(asset_data, telemetry_data):
         ''' Return the residual debt : account also for the difference cost - contract amount'''
         residual_debt = []
+        # INITIAL DEBT = RFV + CREDIT OF THE CONTRACT
         current_debt = asset_data["contract_data"]["contract_amount"] - asset_data["contract_data"]["contract_upfront_payment"] + (asset_data["purchase_cost"] - asset_data["contract_data"]["contract_amount"])
-        daily_subtraction = current_debt / len(telemetry_data["mean_curve"])
+        daily_subtraction = (asset_data["contract_data"]["contract_amount"] - asset_data["contract_data"]["contract_upfront_payment"]) / len(telemetry_data["mean_curve"])
         for i in range(len(telemetry_data["mean_curve"])):
             residual_debt.append(round(current_debt,2))
             current_debt = current_debt - daily_subtraction
@@ -120,7 +121,8 @@ class AssetQualityRatingScoresEstimator:
         upper_bound_curve = []
         mean_curve = []
         i_max = 0
-        baseline = asset_data["category_data"]["useful_life_hours"] / len(telemetry_data["mean_curve"])
+        num_units = 365 * asset_data["category_data"]["useful_life_years"]
+        baseline = asset_data["category_data"]["useful_life_hours"] / num_units
         max_ou = math.ceil((24 / baseline) * 100)
         h = 1 / max_ou
 
@@ -205,7 +207,7 @@ class EsgRatingScoresEstimator:
 
         def get_final_risk(risk, protective_measures_number):
             ''' Lower the risk by one level for each 3 protective measures'''
-            risk_lowered_by = protective_measures_number / 3
+            risk_lowered_by = int(protective_measures_number / 3)
             # LOW 1 or less than 0
             # MEDIUM 2
             # HIGH 3
@@ -329,7 +331,7 @@ class StrategyAdvisorScoresEstimator:
             esg_ratings_scores["environmental_risk_indicators"]["climatic_hazard"],
             esg_ratings_scores["environmental_risk_indicators"]["seismic_hazard"]
         ]
-        high_risk = any(indicator == "high" for indicator in indicators)
+        high_risk = any(indicator >= 4 for indicator in indicators)
 
         if high_risk:
             status = "CRITICO : Sulla base degli indicatori esg, è presente un alto rischio ambientale"
@@ -367,7 +369,7 @@ class AssetScoresEstimator:
 
     @staticmethod
     def get_asset_expected_usage(asset_data, telemetry_history):
-        hours_on_duty = round(float(np.mean(telemetry_history) * 365 ), 2)
+        hours_on_duty = int(float(np.mean(telemetry_history) * 365 ))
         return {
             "hours_on_duty" : hours_on_duty,
             "kwh" : int(hours_on_duty * asset_data["category_data"]["power_kw"])

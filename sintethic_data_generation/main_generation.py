@@ -16,8 +16,8 @@ def reduction_monthly():
     for asset_data in data:
         scores = asset_data["scores"]
 
-        asset_data["true_telemetry"] = compact_into_months(asset_data["true_telemetry"], asset_data["start_date"])
-        asset_data["forecasted_telemetry"] = compact_into_months(asset_data["forecasted_telemetry"], asset_data["start_date"])
+        #todo asset_data["true_telemetry"] = compact_into_months(asset_data["true_telemetry"], asset_data["start_date"])
+        #todo asset_data["forecasted_telemetry"] = compact_into_months(asset_data["forecasted_telemetry"], asset_data["start_date"])
 
         # ASSET QUALITY
         scores["asset_quality_rating"]["quality_rating_curve"]["upper_bound_curve"] = compact_into_months(
@@ -97,9 +97,12 @@ def generate_loop(num_generation):
 
         today = pd.Timestamp.today().strftime('%Y-%m-%d')
 
-        if len(telemetry_data) < days_between_dates(asset_data["start_date"], today) :
+        number_of_units = min(len(telemetry_data), days_between_dates(asset_data["start_date"], today))
+        asset_data["asset_specific_expected_yearly_usage"] = AssetScoresEstimator.get_asset_expected_usage(asset_data, telemetry_data[:number_of_units])
+        asset_data["standard_asset_average_expected_yearly_usage"] = AssetScoresEstimator.get_standard_average_asset_expected_usage(asset_data)
+
+        if len(telemetry_data) == number_of_units :
             print("NO FORECASTING \n\n")
-            number_of_units = len(telemetry_data)
             telemetry_input = {
                 "lower_bound_curve": telemetry_data,
                 "upper_bound_curve": telemetry_data,
@@ -107,15 +110,12 @@ def generate_loop(num_generation):
             }
         else:
             print("FORECASTING \n\n")
-            number_of_units = days_between_dates(asset_data["start_date"], today)
             future_periods = len(telemetry_data) - number_of_units
             telemetry_input = get_forecasted_telemetry(telemetry_data[:number_of_units], future_periods, asset_data["category_data"]["useful_life_hours"], today, asset_data["start_date"])
-            plot_differences_telemetry(telemetry_data, telemetry_input, today, asset_data["start_date"])
+            #plot_differences_telemetry(telemetry_data, telemetry_input, today, asset_data["start_date"])
 
-        #asset_data["true_telemetry"] = telemetry_data
-        #asset_data["forecasted_telemetry"] = telemetry_input["mean_curve"]
-        asset_data["asset_specific_expected_yearly_usage"] = AssetScoresEstimator.get_asset_expected_usage(asset_data, telemetry_data[:number_of_units])
-        asset_data["standard_asset_average_expected_yearly_usage"] = AssetScoresEstimator.get_standard_average_asset_expected_usage(asset_data)
+        #todo asset_data["true_telemetry"] = telemetry_data
+        #todo asset_data["forecasted_telemetry"] = telemetry_input["mean_curve"]
 
         asset_data["scores"] = AssetScoresEstimator.get_scores(asset_data, telemetry_input, number_of_units)
         asset_data.pop("category_data")
@@ -129,4 +129,4 @@ def generate_loop(num_generation):
 
 
 if __name__ == '__main__':
-    generate_loop(num_generation=5)
+    generate_loop(num_generation=60)

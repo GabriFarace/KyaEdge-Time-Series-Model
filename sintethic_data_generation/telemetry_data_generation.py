@@ -22,6 +22,8 @@ class TelemetryDataGeneratorWrapper:
         max_value = 24
         sum_value = asset_data["category_data"]["useful_life_hours"]
 
+        num_units = days_between_month(asset_data["start_date"], asset_data["contract_data"]["contract_months"])
+
         print(f" NUMBER OF DAYS {num_units}, BASELINE VALUE {baseline_value}")
 
         # Build the baseline

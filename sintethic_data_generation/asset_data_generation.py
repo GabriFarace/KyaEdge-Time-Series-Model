@@ -36,25 +36,32 @@ seismic_hazard_protective_measures = [
     "sufficient_distance_from_weak_points"
 ]
 
-with open("cities_data.json", "r") as f:
-    cities_data = json.load(f)
-
-with open("categories.json", "r") as f:
-    categories = json.load(f)
-
-
 
 class AssetDataGenerator:
 
-    def __init__(self):
+    def __init__(self, cities_data=None, categories=None):
+
+        if cities_data is None:
+            with open("cities_data.json", "r") as f:
+                self.cities_data = json.load(f)
+        else:
+            self.cities_data = cities_data
+
+
+        if categories is None:
+            with open("categories.json", "r") as f:
+                self.categories = json.load(f)
+        else:
+            self.categories = categories
+
         self.asset_counter = 0
 
     def generate_new_asset(self) -> dict:
         ''' Generate sintethic asset data : category, contract_data, esg inputs and others'''
         new_asset = {}
         id = self.asset_counter
-        category = np.random.choice(categories)
-        city_data = np.random.choice(cities_data)
+        category = np.random.choice(self.categories)
+        city_data = np.random.choice(self.cities_data)
         lessor = int(np.random.choice(np.arange(1, NUMBER_OF_LESSORS + 1)))
         contract_data = self._get_contract_data(category)
         protective_measures = self._get_protective_measures()

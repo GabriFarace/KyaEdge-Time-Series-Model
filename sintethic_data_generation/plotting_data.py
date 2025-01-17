@@ -200,9 +200,9 @@ def plot_lower_upper(curves, start_date, name):
     plt.show()
 
 
-def plot_main(number_of_asset):
+def plot_main(number_of_asset, index_asset, name_input):
     ''' Plot the data for a number_of_asset from the data.json file'''
-    with open("data.json", "r") as f:
+    with open(f"{name_input}.json", "r") as f:
         data = json.load(f)
 
     counter = 0
@@ -210,7 +210,7 @@ def plot_main(number_of_asset):
     i = 0
     for asset_data in data:
         i = i + 1
-        if i != 2:
+        if i != index_asset:
             continue
 
 
@@ -239,4 +239,4 @@ def plot_main(number_of_asset):
             break
 
 if __name__ == '__main__':
-    plot_main(1)
+    plot_main(1, 1, name_input="data_t2")

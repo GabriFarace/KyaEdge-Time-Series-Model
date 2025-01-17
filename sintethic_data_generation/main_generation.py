@@ -9,15 +9,15 @@ from sintethic_data_generation.telemetry_data_generation import TelemetryDataGen
 from sintethic_data_generation.utils import compact_into_months, months_between_inclusive, days_between_dates
 
 
-def reduction_monthly():
-    with open("data.json", "r") as f:
+def reduction_monthly(name_output):
+    with open(f"{name_output}.json", "r") as f:
         data = json.load(f)
 
     for asset_data in data:
         scores = asset_data["scores"]
 
-        #todo asset_data["true_telemetry"] = compact_into_months(asset_data["true_telemetry"], asset_data["start_date"])
-        #todo asset_data["forecasted_telemetry"] = compact_into_months(asset_data["forecasted_telemetry"], asset_data["start_date"])
+        asset_data["true_telemetry"] = compact_into_months(asset_data["true_telemetry"], asset_data["start_date"])
+        asset_data["forecasted_telemetry"] = compact_into_months(asset_data["forecasted_telemetry"], asset_data["start_date"])
 
         # ASSET QUALITY
         scores["asset_quality_rating"]["quality_rating_curve"]["upper_bound_curve"] = compact_into_months(
@@ -68,10 +68,10 @@ def reduction_monthly():
             scores["esg_rating"]["energy_consumed"]["mean_curve"], asset_data["start_date"])
 
         scores["number_of_units"] = min(months_between_inclusive(asset_data["start_date"]), len(scores["esg_rating"]["energy_consumed"]["mean_curve"]))
-    with open('data_months.json', 'w') as json_file:
+    with open(f'{name_output}_months.json', 'w') as json_file:
         json.dump(data, json_file, indent=4)
 
-def generate_loop(num_generation):
+def generate_loop(num_generation, name_output):
     ''' Main loop that generates sinthetic asset data with daily and monthly granularity'''
 
     asset_data_generator = AssetDataGenerator()
@@ -83,6 +83,7 @@ def generate_loop(num_generation):
 
         asset_data = asset_data_generator.generate_new_asset()
 
+        # todo use a variable to decide which generator
         telemetry_data = telemetry_data_generator.generate_telemetry_data(asset_data)
 
         '''# Plot the generated time series
@@ -112,21 +113,21 @@ def generate_loop(num_generation):
             print("FORECASTING \n\n")
             future_periods = len(telemetry_data) - number_of_units
             telemetry_input = get_forecasted_telemetry(telemetry_data[:number_of_units], future_periods, asset_data["category_data"]["useful_life_hours"], today, asset_data["start_date"])
-            #plot_differences_telemetry(telemetry_data, telemetry_input, today, asset_data["start_date"])
+            plot_differences_telemetry(telemetry_data, telemetry_input, today, asset_data["start_date"])
 
-        #todo asset_data["true_telemetry"] = telemetry_data
-        #todo asset_data["forecasted_telemetry"] = telemetry_input["mean_curve"]
+        asset_data["true_telemetry"] = telemetry_data
+        asset_data["forecasted_telemetry"] = telemetry_input["mean_curve"]
 
         asset_data["scores"] = AssetScoresEstimator.get_scores(asset_data, telemetry_input, number_of_units)
         asset_data.pop("category_data")
         asset_data.pop("city_data")
         data.append(asset_data)
 
-    with open('data.json', 'w') as json_file:
+    with open(f'{name_output}.json', 'w') as json_file:
         json.dump(data, json_file, indent=4)
 
-    reduction_monthly()
+    reduction_monthly(name_output)
 
 
 if __name__ == '__main__':
-    generate_loop(num_generation=60)
+    generate_loop(num_generation=5, name_output="data_t2")

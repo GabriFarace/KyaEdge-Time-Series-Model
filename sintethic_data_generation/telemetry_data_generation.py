@@ -63,7 +63,7 @@ class TelemetryDataGeneratorWrapper:
         print(f" NUMBER OF DAYS {num_units}, BASELINE VALUE {baseline_value}")
 
         # Build the baseline
-        self.tsg_conditions.build_baseline(num_units, baseline_value, 0., max_value, 0.001, asset_data["start_date"])
+        self.tsg_conditions.build_baseline(num_units=num_units, baseline_value=baseline_value, min_value=0., max_value=max_value, sum_value=sum_value ,noise_ratio_std=0.001, start_date=asset_data["start_date"])
 
         # Build the conditions
         self.tsg_conditions.apply_func_condition(24, lambda x : x * 1.2)
@@ -82,8 +82,5 @@ class TelemetryDataGeneratorWrapper:
 
         # Build the conditions
         self.tsg_conditions.apply_func_condition(Weekday.SATURDAY, lambda x : x/2)
-
-
-        # todo also for the other generator self.time_series_generator.build_sum(sum_value)
 
         return self.tsg_conditions.ts["y"].tolist()

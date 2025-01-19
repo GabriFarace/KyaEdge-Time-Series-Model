@@ -62,7 +62,7 @@ def create_prophet_dataframe(time_series, start_date=None):
       'y': time_series.values
   })
 
-  return prophet_df
+  return prophet_df  
 
 
 

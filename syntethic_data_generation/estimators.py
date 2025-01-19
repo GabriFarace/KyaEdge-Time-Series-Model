@@ -2,7 +2,7 @@ import numpy as np
 from prophet import Prophet
 import math
 
-from sintethic_data_generation.utils import create_prophet_dataframe
+from syntethic_data_generation.utils import create_prophet_dataframe
 
 
 class LeasingRiskScoresEstimator:

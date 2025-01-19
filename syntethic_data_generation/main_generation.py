@@ -1,13 +1,13 @@
 import json
 import pandas as pd
-from waitress.adjustments import asset
 
-from sintethic_data_generation.asset_data_generation import AssetDataGenerator
-from sintethic_data_generation.estimators import AssetScoresEstimator, get_forecasted_telemetry
-from sintethic_data_generation.plotting_data import plot_differences_telemetry
-from sintethic_data_generation.telemetry_data_generation import TelemetryDataGeneratorWrapper
-from sintethic_data_generation.utils import compact_into_months, months_between_inclusive, days_between_dates
+from syntethic_data_generation.asset_data_generation import AssetDataGenerator
+from syntethic_data_generation.estimators import AssetScoresEstimator, get_forecasted_telemetry
+from syntethic_data_generation.plotting_data import plot_differences_telemetry
+from syntethic_data_generation.telemetry_data_generation import TelemetryDataGeneratorWrapper
+from syntethic_data_generation.utils import compact_into_months, months_between_inclusive, days_between_dates
 
+ 
 
 def reduction_monthly(name_output):
     with open(f"{name_output}.json", "r") as f:

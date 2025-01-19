@@ -1,6 +1,6 @@
 import json
 import os
-from sintethic_data_generation.estimators import AggregateScoresEstimator
+from syntethic_data_generation.estimators import AggregateScoresEstimator
 
 
 

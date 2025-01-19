@@ -2,7 +2,7 @@ from matplotlib import pyplot as plt
 import pandas as pd
 import json
 
-from sintethic_data_generation.utils import create_prophet_dataframe, create_monthly_average_df
+from syntethic_data_generation.utils import create_prophet_dataframe, create_monthly_average_df
 
 
 def plot_differences_telemetry(true_telemetry, forecasted_telemetry, today, start_date):

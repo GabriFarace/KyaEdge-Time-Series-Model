@@ -130,4 +130,4 @@ def generate_loop(num_generation, name_output):
 
 
 if __name__ == '__main__':
-    generate_loop(num_generation=5, name_output="data_t2")
+    generate_loop(num_generation=1, name_output="data_t2")

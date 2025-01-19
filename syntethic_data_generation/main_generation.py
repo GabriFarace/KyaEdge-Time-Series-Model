@@ -1,5 +1,7 @@
 import json
 import pandas as pd
+import sys
+print(sys.path)
 
 
 from estimators import AssetScoresEstimator, get_forecasted_telemetry
@@ -11,7 +13,7 @@ from utils import compact_into_months, months_between_inclusive, days_between_da
  
 
 def reduction_monthly(name_output):
-    with open(f"{name_output}.json", "r") as f:
+    with open(f"syntethic_data_generation/{name_output}.json", "r") as f:
         data = json.load(f)
 
     for asset_data in data:
@@ -69,7 +71,7 @@ def reduction_monthly(name_output):
             scores["esg_rating"]["energy_consumed"]["mean_curve"], asset_data["start_date"])
 
         scores["number_of_units"] = min(months_between_inclusive(asset_data["start_date"]), len(scores["esg_rating"]["energy_consumed"]["mean_curve"]))
-    with open(f'{name_output}_months.json', 'w') as json_file:
+    with open(f'syntethic_data_generation/{name_output}_months.json', 'w') as json_file:
         json.dump(data, json_file, indent=4)
 
 def generate_loop(num_generation, name_output):
@@ -124,7 +126,7 @@ def generate_loop(num_generation, name_output):
         asset_data.pop("city_data")
         data.append(asset_data)
 
-    with open(f'{name_output}.json', 'w') as json_file:
+    with open(f'syntethic_data_generation/{name_output}.json', 'w') as json_file:
         json.dump(data, json_file, indent=4)
 
     reduction_monthly(name_output)

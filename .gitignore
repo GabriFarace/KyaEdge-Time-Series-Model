@@ -3,3 +3,4 @@ config.json
 first_insertions_into_db/
 mlruns/
 .vscode/
+.env

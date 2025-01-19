@@ -62,7 +62,7 @@ with st.form("Time Series Generation Parameters"):
             "Enable Noise", value=st.session_state["components"]["noise"]
         )
         st.session_state["components"]["autoregression"] = st.checkbox(
-            "Enable Noise", value=st.session_state["components"]["autoregression"]
+            "Enable autoregression", value=st.session_state["components"]["autoregression"]
         )
         st.session_state["components"]["holidays"] = st.checkbox(
             "Enable Holidays", value=st.session_state["components"]["holidays"]

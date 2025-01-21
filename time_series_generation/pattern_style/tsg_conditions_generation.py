@@ -1,12 +1,9 @@
-import numpy as np
-from matplotlib import pyplot as plt
 
-from syntethic_data_generation.asset_data_generation import AssetDataGenerator
-from syntethic_data_generation.utils import days_between_month
+from matplotlib import pyplot as plt
 from time_series_generation.pattern_style.tsg_conditions import TimeSeriesGeneratorConditions, \
     TimeSeriesConditionsDirector
 import json
-import pandas as pd
+
 
 def generate_ts_loop(num_generation, name_output):
     ''' Main loop that generates sinthetic asset data with daily and monthly granularity'''

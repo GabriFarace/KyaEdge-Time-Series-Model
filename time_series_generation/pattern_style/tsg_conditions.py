@@ -204,7 +204,15 @@ class TimeSeriesGeneratorConditions:
 class TimeSeriesConditionsDirector:
     def __init__(self):
         self.time_series_generator = TimeSeriesGeneratorConditions()
-        self.asset_data_generator = AssetDataGenerator()
+
+        with open(f"../../syntethic_data_generation/categories.json", "r") as f:
+            categories = json.load(f)
+
+        with open(f"../../syntethic_data_generation/cities_data.json", "r") as f:
+            cities_data = json.load(f)
+
+        self.asset_data_generator = AssetDataGenerator(cities_data=cities_data, categories=categories)
+
         with open(f"config_tsg_conditions.json", "r") as f:
             self.config = json.load(f)
 
@@ -255,7 +263,7 @@ class TimeSeriesConditionsDirector:
 
         dates_intervals = []
         for interval in intervals:
-            dates_intervals.append([self.time_series_generator.ts[interval[0]]["ds"], self.time_series_generator.ts[interval[1]]["ds"]])
+            dates_intervals.append([str(self.time_series_generator.ts["ds"][interval[0]])[:10], str(self.time_series_generator.ts["ds"][interval[1]])[:10] ])
 
         self.time_series_data["dates_intervals"] = dates_intervals
 
@@ -327,6 +335,9 @@ class TimeSeriesConditionsDirector:
                                                               end_date=end_date)
 
         # Save data
+        for cond in total_conditions_array:
+            cond["conditions"] = list(map( lambda x : x.value, cond["conditions"]))
+
         self.time_series_data["weekly_seasonality"] = total_conditions_array
 
     def _build_monthly(self):

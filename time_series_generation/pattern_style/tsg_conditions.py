@@ -3,8 +3,10 @@ from typing import Union
 import pandas as pd
 import numpy as np
 from enum import Enum
+import json
 
-from matplotlib import pyplot as plt
+from syntethic_data_generation.asset_data_generation import AssetDataGenerator
+from syntethic_data_generation.utils import days_between_month
 
 
 class Weekday(Enum):
@@ -199,19 +201,317 @@ class TimeSeriesGeneratorConditions:
 
 
 
+class TimeSeriesConditionsDirector:
+    def __init__(self):
+        self.time_series_generator = TimeSeriesGeneratorConditions()
+        self.asset_data_generator = AssetDataGenerator()
+        with open(f"config_tsg_conditions.json", "r") as f:
+            self.config = json.load(f)
 
-if __name__ == '__main__':
-    tsg = TimeSeriesGeneratorConditions()
-    tsg.build_baseline(num_units=730, baseline_value=100, min_value=0, max_value=1000, sum_value=60000)
-    tsg.apply_func_condition(("2024-02-11","2024-04-15"), lambda x : 0)
+        self.time_series_data = None
 
-    # Plot the generated time series
-    fig, ax = plt.subplots()
-    ax.plot(tsg.ts["ds"], tsg.ts["y"], label="Generated Time Series")
-    ax.set_title("Time Series")
-    ax.set_xlabel("Time (Days)")
-    ax.set_ylabel("Value")
-    ax.legend()
 
-    plt.show()
+    def _build_baseline(self):
+        ''' Build the baseline starting from the data obtained by the asset data generator'''
+        asset_data = self.asset_data_generator.generate_new_asset()
+
+        # Get baseline data
+        num_days_life = 365 * asset_data["category_data"]["useful_life_years"]
+        baseline_value = int(asset_data["category_data"]["useful_life_hours"] / num_days_life)
+        max_value = self.config["max_value_series"]
+        min_value = self.config["min_value_series"]
+        sum_value = asset_data["category_data"]["useful_life_hours"]
+        print(
+            f"ASSET CATEGORY : {asset_data["category_data"]["name"]}, BASELINE VALUE: {baseline_value}, SUM VALUE: {sum_value}")
+
+        # Generate noise and contract data
+        start_date = self.config["asset_start_date"]
+        years = int(np.random.choice(np.arange(self.config["contract_years_range"][0], self.config["contract_years_range"][1] + 1)))
+        contract_months = years * 12
+        num_units = days_between_month(start_date, contract_months)
+        noise_ratio_std = np.random.uniform(0, self.config["max_ratio_noise_std"])
+        print(f"START DATE: {start_date}, NUMBER OF DAYS: {num_units}, NOISE RATIO STD: {noise_ratio_std}")
+
+        self.time_series_data["category"] = asset_data["category_data"]["name"]
+        self.time_series_data["baseline_value"] = baseline_value
+        self.time_series_data["sum_value"] = sum_value
+        self.time_series_data["max_value"] = max_value
+        self.time_series_data["min_value"] = min_value
+        self.time_series_data["num_units"] = num_units
+
+        # Build the baseline
+        self.time_series_generator.build_baseline(num_units=num_units, baseline_value=baseline_value, min_value=min_value,
+                                                max_value=max_value, sum_value=sum_value,
+                                                noise_ratio_std=noise_ratio_std, start_date=start_date)
+
+    def _build_changepoints(self):
+
+        num_shifts = np.random.choice(np.arange(1, self.config["max_number_changepoints"] + 1))
+        change_points = np.random.choice(np.arange(self.config["changepoints_start_end_interval"], self.time_series_data["num_units"] - self.config["changepoints_start_end_interval"]), num_shifts, replace=False)
+        change_points = np.sort(change_points)
+        self.time_series_data["changepoints"] = change_points.tolist()
+        change_points = np.concatenate(([0], change_points, [self.time_series_data["num_units"]]))
+        intervals = [(int(change_points[i]), int(change_points[i + 1] - 1)) for i in range(change_points.size - 1)]
+
+        dates_intervals = []
+        for interval in intervals:
+            dates_intervals.append([self.time_series_generator.ts[interval[0]]["ds"], self.time_series_generator.ts[interval[1]]["ds"]])
+
+        self.time_series_data["dates_intervals"] = dates_intervals
+
+    def _build_weekly(self):
+        ''' build the weekly seasonality on the time series'''
+
+        weekdays_array = [Weekday.MONDAY, Weekday.TUESDAY, Weekday.WEDNESDAY, Weekday.THURSDAY, Weekday.FRIDAY, Weekday.SATURDAY, Weekday.SUNDAY]
+
+        # Obtain the general conditions randomly (general means that they apply to the entire time series)
+        general_conditions_array = []
+        if np.random.choice([True, False], p=[self.config["probability_general_seasonality"], 1 - self.config["probability_general_seasonality"]]):
+            num_conditions = np.random.choice(np.arange(1, self.config["max_conditions_week"] + 1))
+            conditions = np.random.choice(weekdays_array, num_conditions, replace=False).tolist()
+            add_values = np.random.uniform(-self.config["max_ratio_add_value_std"] * self.time_series_data["baseline_value"], self.config["max_ratio_add_value_std"] * self.time_series_data["baseline_value"], num_conditions).tolist()
+
+            general_conditions_array.append({
+                "conditions" : conditions,
+                "start_date": None,
+                "end_date": None,
+                "add_values" : add_values
+            })
+
+
+
+
+        # Obtain the specific conditions of a date interval
+        weekly_conditions_array = []
+        for interval in self.time_series_data["dates_intervals"]:
+            num_conditions = np.random.choice(np.arange(1, self.config["max_conditions_week"] + 1))
+            conditions = np.random.choice(weekdays_array, num_conditions, replace=False).tolist()
+            add_values = np.random.uniform(-self.config["max_ratio_add_value_std"] * self.time_series_data["baseline_value"], self.config["max_ratio_add_value_std"] * self.time_series_data["baseline_value"], num_conditions).tolist()
+
+
+            # Extract the weekly seasonalities for each interval
+            weekly_seasonality = []
+            for weekday in weekdays_array:
+                value = 0
+                for i,condition in enumerate(conditions):
+                    if condition == weekday:
+                        value += add_values[i]
+
+                for i,condition in enumerate(general_conditions_array[0]["conditions"]):
+                    if condition == weekday:
+                        value += general_conditions_array[0]["add_values"][i]
+                weekly_seasonality.append(value)
+
+            weekly_conditions_array.append({
+                "conditions" : conditions,
+                "start_date": interval[0],
+                "end_date": interval[1],
+                "add_values" : add_values,
+                "seasonality" : weekly_seasonality
+            })
+
+
+
+
+        # Apply Seasonality
+        total_conditions_array = weekly_conditions_array + general_conditions_array
+        for weekly_conditions in total_conditions_array:
+            selected_conditions = weekly_conditions["conditions"]
+            start_date = weekly_conditions["start_date"]
+            end_date = weekly_conditions["end_date"]
+            add_values_c = weekly_conditions["add_values"]
+
+            for i,selected_condition in enumerate(selected_conditions):
+                self.time_series_generator.apply_func_condition(condition=selected_condition,
+                                                              func=lambda x: x + add_values_c[i], start_date=start_date,
+                                                              end_date=end_date)
+
+        # Save data
+        self.time_series_data["weekly_seasonality"] = total_conditions_array
+
+    def _build_monthly(self):
+        ''' build the monthly seasonality on the time series'''
+
+        monthdays_array = range(1, 32)
+
+        # Obtain the general conditions randomly (general means that they apply to the entire time series)
+        general_conditions_array = []
+        if np.random.choice([True, False], p=[self.config["probability_general_seasonality"],
+                                              1 - self.config["probability_general_seasonality"]]):
+            num_conditions = np.random.choice(np.arange(1, self.config["max_conditions_month"] + 1))
+            conditions = np.random.choice(monthdays_array, num_conditions, replace=False).tolist()
+            add_values = np.random.uniform(
+                -self.config["max_ratio_add_value_std"] * self.time_series_data["baseline_value"],
+                self.config["max_ratio_add_value_std"] * self.time_series_data["baseline_value"],
+                num_conditions).tolist()
+
+            general_conditions_array.append({
+                "conditions": conditions,
+                "start_date": None,
+                "end_date": None,
+                "add_values": add_values
+            })
+
+        # Obtain the specific conditions of a date interval
+        monthly_conditions_array = []
+        for interval in self.time_series_data["dates_intervals"]:
+            num_conditions = np.random.choice(np.arange(1, self.config["max_conditions_month"] + 1))
+            conditions = np.random.choice(monthdays_array, num_conditions, replace=False).tolist()
+            add_values = np.random.uniform(
+                -self.config["max_ratio_add_value_std"] * self.time_series_data["baseline_value"],
+                self.config["max_ratio_add_value_std"] * self.time_series_data["baseline_value"],
+                num_conditions).tolist()
+
+            # Extract the weekly seasonalities for each interval
+            monthly_seasonality = []
+            for monthday in monthdays_array:
+                value = 0
+                for i, condition in enumerate(conditions):
+                    if condition == monthday:
+                        value += add_values[i]
+
+                for i, condition in enumerate(general_conditions_array[0]["conditions"]):
+                    if condition == monthday:
+                        value += general_conditions_array[0]["add_values"][i]
+                monthly_seasonality.append(value)
+
+            monthly_conditions_array.append({
+                "conditions": conditions,
+                "start_date": interval[0],
+                "end_date": interval[1],
+                "add_values": add_values,
+                "seasonality": monthly_seasonality
+            })
+
+        # Apply Seasonality
+        total_conditions_array = monthly_conditions_array + general_conditions_array
+        for monthly_conditions in total_conditions_array:
+            selected_conditions = monthly_conditions["conditions"]
+            start_date = monthly_conditions["start_date"]
+            end_date = monthly_conditions["end_date"]
+            add_values_c = monthly_conditions["add_values"]
+
+            for i, selected_condition in enumerate(selected_conditions):
+                self.time_series_generator.apply_func_condition(condition=selected_condition,
+                                                                func=lambda x: x + add_values_c[i],
+                                                                start_date=start_date,
+                                                                end_date=end_date)
+        # Save data
+        self.time_series_data["monthly_seasonality"] = total_conditions_array
+
+    @staticmethod
+    def day_of_year_to_date(day_of_year):
+        # Days in each month for a non-leap year
+        days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
+        month = 1
+        for days in days_in_month:
+            if day_of_year <= days:
+                # Return the date in the "2025-MM-DD" format
+                return f"2025-{month:02d}-{day_of_year:02d}"
+            day_of_year -= days
+            month += 1
+
+    @staticmethod
+    def build_month_day_map():
+        days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+        month_day_map = {}
+        current_day = 1
+
+        for month, days in enumerate(days_in_month, start=1):
+            # Generate a range of days for the current month
+            month_day_map[month] = list(range(current_day, current_day + days))
+            current_day += days
+
+        return month_day_map
+
+
+    def _build_yearly(self):
+        ''' Build the yearly seasonality, upon the entire series'''
+
+        yeardays_array = range(1, 366)
+        yearmonths_array = range(1, 13)
+        month_day_map = self.build_month_day_map()
+
+
+        # Obtain the general conditions (always present for the yearly seasonality)
+        yearly_conditions_array = []
+        num_conditions = np.random.choice(np.arange(1, self.config["max_conditions_year"] + 1))
+        conditions = np.random.choice(yearmonths_array, num_conditions, replace=False).tolist()
+
+
+        add_values = np.random.uniform(
+            -self.config["max_ratio_add_value_std"] * self.time_series_data["baseline_value"],
+            self.config["max_ratio_add_value_std"] * self.time_series_data["baseline_value"],
+            num_conditions).tolist()
+
+        # Extract the weekly seasonalities for each interval
+        yearly_seasonality = []
+        for yearday in range(1,366):
+            value = 0
+            for i, condition in enumerate(conditions):
+                if yearday in month_day_map[condition]:
+                    value += add_values[i]
+
+            yearly_seasonality.append(value)
+
+        final_conditions = []
+        for condition in conditions:
+            final_conditions.append((self.day_of_year_to_date(month_day_map[condition][0]), self.day_of_year_to_date(month_day_map[condition][-1])))
+
+        yearly_conditions_array.append({
+            "conditions": final_conditions,
+            "start_date": None,
+            "end_date": None,
+            "add_values": add_values,
+            "seasonality": yearly_seasonality
+        })
+
+        # Apply Seasonality
+        for yearly_conditions in yearly_conditions_array:
+            selected_conditions = yearly_conditions["conditions"]
+            start_date = yearly_conditions["start_date"]
+            end_date = yearly_conditions["end_date"]
+            add_values_c = yearly_conditions["add_values"]
+
+            for i, selected_condition in enumerate(selected_conditions):
+                self.time_series_generator.apply_func_condition(condition=selected_condition,
+                                                                func=lambda x: x + add_values_c[i],
+                                                                start_date=start_date,
+                                                                end_date=end_date)
+        # Save data
+        self.time_series_data["yearly_seasonality"] = yearly_conditions_array
+
+
+
+    def make_ts_conditions(self):
+        '''
+        Use the builder to make the time series starting from the asset data generator and generating randomly
+        conditions using the configurations
+        '''
+
+        # Reset the data
+        self.time_series_data = {}
+        self.time_series_generator.reset()
+
+        # Build the baseline
+        self._build_baseline()
+
+        # Create the random changepoints
+        self._build_changepoints()
+
+        # Create the weekly seasonality
+        self._build_weekly()
+
+        # Create the monthly seasonality
+        self._build_monthly()
+
+        # Create the yearly seasonality
+        self._build_yearly()
+
+        self.time_series_data["time_series"] = self.time_series_generator.ts["y"].tolist()
+
+        return self.time_series_data.copy()
+
+
 

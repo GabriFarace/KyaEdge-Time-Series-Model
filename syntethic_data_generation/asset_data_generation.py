@@ -42,14 +42,14 @@ class AssetDataGenerator:
     def __init__(self, cities_data=None, categories=None):
 
         if cities_data is None:
-            with open("syntethic_data_generation/cities_data.json", "r") as f:
+            with open("cities_data.json", "r") as f:
                 self.cities_data = json.load(f)
         else:
             self.cities_data = cities_data
 
 
         if categories is None:
-            with open("syntethic_data_generation/categories.json", "r") as f:
+            with open("categories.json", "r") as f:
                 self.categories = json.load(f)
         else:
             self.categories = categories

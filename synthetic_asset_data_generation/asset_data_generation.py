@@ -5,7 +5,7 @@ from time_series_generation.tsg_components_style import TimeSeriesGeneratorCompo
 from time_series_generation.tsg_functional_style import TimeSeriesGeneratorFunctional
 
 NUMBER_OF_LESSORS = 3
-START_DATE =  "2021-01-01"
+START_DATE =  "2023-01-01"
 flood_hazard_protective_measures = [
     "flood_barriers",
     "water_proofing",
@@ -39,7 +39,7 @@ seismic_hazard_protective_measures = [
 
 class AssetDataGenerator:
 
-    def __init__(self, cities_data : dict, categories : dict, time_series_generator_components: TimeSeriesGeneratorComponents, time_series_generator_functional : TimeSeriesGeneratorFunctional):
+    def __init__(self, cities_data : list, categories : list, time_series_generator_components: TimeSeriesGeneratorComponents, time_series_generator_functional : TimeSeriesGeneratorFunctional):
 
         self.cities_data = cities_data
 

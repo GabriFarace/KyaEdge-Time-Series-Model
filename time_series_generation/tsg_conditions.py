@@ -4,8 +4,8 @@ import pandas as pd
 import numpy as np
 from enum import Enum
 
-from syntethic_data_generation.asset_data_generation import AssetDataGenerator
-from syntethic_data_generation.pd_date_utils import days_between_month
+from synthetic_data_generation.asset_data_generation import AssetDataGenerator
+from synthetic_data_generation.pd_date_utils import days_between_month
 
 
 class Weekday(Enum):

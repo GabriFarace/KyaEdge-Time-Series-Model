@@ -2,13 +2,13 @@ import json
 import pandas as pd
 import os
 
-from syntethic_data_generation.asset_data_generation import AssetDataGenerator
-from syntethic_data_generation.estimators import AssetScoresEstimator, get_forecasted_telemetry, \
+from synthetic_data_generation.asset_data_generation import AssetDataGenerator
+from synthetic_data_generation.estimators import AssetScoresEstimator, get_forecasted_telemetry, \
     AggregateScoresEstimator
-from syntethic_data_generation.pd_date_utils import days_between_dates, compact_into_months, months_between_inclusive
-from syntethic_data_generation.plotting_utils import plot_differences_telemetry, plot_differences_telemetry_months, \
+from synthetic_data_generation.pd_date_utils import days_between_dates, compact_into_months, months_between_inclusive
+from synthetic_data_generation.plotting_utils import plot_differences_telemetry, plot_differences_telemetry_months, \
     plot_leasing_risk, plot_lower_upper, plot_quality_rating, plot_esg_rating
-from syntethic_data_generation.telemetry_data_generation import TelemetryDataGeneratorWrapper
+from synthetic_data_generation.telemetry_data_generation import TelemetryDataGeneratorWrapper
 from time_series_generation.tsg_conditions import TimeSeriesGeneratorConditions
 from time_series_generation.tsg_neural_prophet import TimeSeriesGeneratorNP
 

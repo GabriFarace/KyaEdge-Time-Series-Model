@@ -1,4 +1,4 @@
-from syntethic_data_generation.pd_date_utils import days_between_month
+from synthetic_data_generation.pd_date_utils import days_between_month
 from time_series_generation.tsg_neural_prophet import ParametersGenerationConfigsNP, TimeSeriesDirectorNP, TimeSeriesGeneratorNP
 from time_series_generation.tsg_conditions import TimeSeriesGeneratorConditions, Weekday
 

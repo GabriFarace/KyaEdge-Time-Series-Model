@@ -346,6 +346,6 @@ class TimeSeriesGeneratorComponents:
         if ts_flags.sum_constraint:
             self.time_series_components.build_sum(sum_value)
 
-        return self.time_series_components.get_series()
+        return self.time_series_components.get_series().tolist()
 
 

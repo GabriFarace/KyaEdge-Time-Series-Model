@@ -2,15 +2,54 @@ import json
 import pandas as pd
 import os
 
+from matplotlib import pyplot as plt
+
 from synthetic_asset_data_generation.asset_data_generation import AssetDataGenerator
 from synthetic_asset_data_generation.estimators import AssetScoresEstimator, get_forecasted_telemetry, \
     AggregateScoresEstimator
 from synthetic_asset_data_generation.pd_date_utils import days_between_dates, compact_into_months, months_between_inclusive
 from synthetic_asset_data_generation.plotting_utils import plot_differences_telemetry, plot_differences_telemetry_months, \
     plot_leasing_risk, plot_lower_upper, plot_quality_rating, plot_esg_rating
-from time_series_generation.tsg_functional_style import TimeSeriesFunctional, TimeSeriesGeneratorFunctional
-from time_series_generation.tsg_components_style import TimeSeriesComponents, TimeSeriesGeneratorComponents
+from time_series_generation.tsg_functional_style import TimeSeriesGeneratorFunctional
+from time_series_generation.tsg_components_style import TimeSeriesGeneratorComponents
 
+
+
+def generate_ts_loop(num_generation, name_output, plotting):
+    ''' Main loop that generates sinthetic asset data with daily and monthly granularity'''
+
+    with open(f"json_files/cities_data.json", "r") as f:
+        cities_data = json.load(f)
+    with open(f"json_files/categories.json", "r") as f:
+        categories = json.load(f)
+    with open(f"json_files/config_generator_functional_style.json", "r") as f:
+        config = json.load(f)
+    with open(f"json_files/config_generator_components_style.json", "r") as f:
+        config2 = json.load(f)
+
+
+    data = []
+    asset_data_generator = AssetDataGenerator(cities_data=cities_data, categories=categories, time_series_generator_functional=TimeSeriesGeneratorFunctional(config=config), time_series_generator_components=TimeSeriesGeneratorComponents(config=config2))
+
+
+    for i in range(num_generation):
+        time_series_data = asset_data_generator.generate_new_asset(components=False)["telemetry"]
+
+        if plotting:
+            # Plot the generated time series
+            fig, ax = plt.subplots()
+            ax.plot(time_series_data, label="Generated Time Series")
+            ax.set_title("Time Series")
+            ax.set_xlabel("Time (Days)")
+            ax.set_ylabel("Value")
+            ax.legend()
+
+            plt.show()
+
+        data.append(time_series_data)
+
+    with open(f'json_files/{name_output}.json', 'w') as json_file:
+        json.dump(data, json_file, indent=4)
 
 def aggregates_scores_main(name_input):
     ''' Read the file data_months and compute the aggregation using the estimators.AggregateScoresEstimator'''
@@ -39,20 +78,15 @@ def aggregates_scores_main(name_input):
         with open(f'json_files/json_data/lessor{lessor_id}_data/data_{lessor_id}.json', 'w') as json_file:
             json.dump(lessors_assets_scores_list[lessor_id], json_file, indent=4)
 
-def plot_main(number_of_asset, index_asset, name_input):
+def plot_main(number_of_asset, name_input):
     ''' Plot the data for a number_of_asset from the data.json file'''
     with open(f"json_files/{name_input}.json", "r") as f:
         data = json.load(f)
 
     counter = 0
 
-    i = 0
+
     for asset_data in data:
-        i = i + 1
-        if i != index_asset:
-            continue
-
-
 
         scores = asset_data["scores"]
 
@@ -163,7 +197,6 @@ def generate_loop(num_generation, name_output):
 
         telemetry_data = asset_data["telemetry"]
 
-
         today = pd.Timestamp.today().strftime('%Y-%m-%d')
 
         number_of_units = min(len(telemetry_data), days_between_dates(asset_data["start_date"], today))
@@ -181,7 +214,7 @@ def generate_loop(num_generation, name_output):
             print("FORECASTING \n\n")
             future_periods = len(telemetry_data) - number_of_units
             telemetry_input = get_forecasted_telemetry(telemetry_data[:number_of_units], future_periods, asset_data["category_data"]["useful_life_hours"], today, asset_data["start_date"])
-            plot_differences_telemetry(telemetry_data, telemetry_input, today, asset_data["start_date"])
+            #plot_differences_telemetry(telemetry_data, telemetry_input, today, asset_data["start_date"])
 
         asset_data["true_telemetry"] = telemetry_data
         asset_data["forecasted_telemetry"] = telemetry_input["mean_curve"]
@@ -199,6 +232,7 @@ def generate_loop(num_generation, name_output):
 
 
 if __name__ == '__main__':
-    #generate_loop(num_generation=1, name_output="data_t2")
-    #plot_main(1, 1, name_input="data_t2")
-    aggregates_scores_main(name_input="data_t2")
+    #generate_loop(num_generation=5, name_output="data_t2")
+    #plot_main(2, name_input="data_t2")
+    #aggregates_scores_main(name_input="data_t2")
+    generate_ts_loop(num_generation=2, name_output="time_series_generated", plotting=True)

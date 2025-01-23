@@ -90,7 +90,7 @@ class AssetDataGenerator:
 
         new_asset["category_data"] = category
         new_asset["city_data"] = city_data
-        new_asset["telemetry"] = self.generate_telemetry_data(asset_data=new_asset, components=components)
+        new_asset["telemetry"] = self._generate_telemetry_data(asset_data=new_asset, components=components)
 
         return new_asset
 
@@ -146,7 +146,7 @@ class AssetDataGenerator:
             "seismic_hazard_protective_measures" : seismic_pm
         }
 
-    def generate_telemetry_data(self, asset_data, components=bool):
+    def _generate_telemetry_data(self, asset_data, components=bool):
         ''' Generate sintethic telemetry data using the generator, assume hours as unit of the telemetry'''
 
         # Build the baseline

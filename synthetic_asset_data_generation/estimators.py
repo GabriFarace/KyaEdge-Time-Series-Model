@@ -605,7 +605,7 @@ def get_forecasted_telemetry(telemetry_data, future_periods, sum_maximum, today,
     m.fit(df)
     future = m.make_future_dataframe(periods=future_periods)
     forecast = m.predict(future)
-    #m.plot(forecast)
+    m.plot(forecast)
 
 
     # Filter rows where 'ds' > today
@@ -615,7 +615,6 @@ def get_forecasted_telemetry(telemetry_data, future_periods, sum_maximum, today,
     yhat_list = np.clip(filtered_df['yhat'], 0, 24).tolist()
     yhat_lower_list = np.clip(filtered_df['yhat_lower'], 0, 24).tolist()
     yhat_upper_list = np.clip(filtered_df['yhat_upper'], 0, 24).tolist()
-
 
 
     def build_sum(telemetry, sum_value):

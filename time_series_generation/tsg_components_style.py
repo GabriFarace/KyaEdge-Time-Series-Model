@@ -9,55 +9,25 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # Format for log messages
     datefmt='%Y-%m-%d %H:%M:%S'  # Format for timestamps
 )
-logger = logging.getLogger("ProphetLogger")
+logger = logging.getLogger("Tsg Components Logger")
 
-class TimeSeriesFlagsNP:
-    def __init__(self, trend : bool, seasonal : bool, noise : bool, holidays : bool, inactivity : bool, autoregression : bool, interval_constraint : bool, sum_constraint : bool):
+class ComponentsFlags:
+    def __init__(self, trend : bool, seasonal : bool, noise : bool, inactivity : bool, autoregression : bool, interval_constraint : bool, sum_constraint : bool):
         self.trend = trend
         self.seasonal = seasonal
         self.noise = noise
-        self.holidays = holidays
         self.inactivity = inactivity
         self.autoregression = autoregression
         self.interval_constraint = interval_constraint
         self.sum_constraint = sum_constraint
 
-class SeasonalityAttributesProphetNP:
+class SeasonalityAttributes:
     def __init__(self, seasonality_frequency : int, paramaters_number : int, coefficients : list[tuple[float, float]]):
         self.seasonality_frequency = seasonality_frequency
         self.parameters_number = paramaters_number
         self.coefficients = coefficients
 
-class ParametersGenerationConfigsNP:
-
-    def __init__(self, reset_configuration : dict):
-        # Load configuration file
-        self.reset_configuration  = reset_configuration
-
-        self.baseline = {}
-        self.trend = {}
-        self.seasonal = {}
-        self.noise = {}
-        self.holidays = {}
-        self.inactivity = {}
-        self.autoregression = {}
-        self.set()
-
-    def set(self, c=None):
-        if c is not None:
-            config = c
-        else:
-            config = self.reset_configuration
-
-        self.baseline = config["baseline"]
-        self.trend = config["trend"]
-        self.seasonal = config["seasonal"]
-        self.noise = config["noise"]
-        self.holidays = config["holidays"]
-        self.inactivity = config["inactivity"]
-        self.autoregression = config["autoregression"]
-
-class TimeSeriesGeneratorNP:
+class TimeSeriesComponents:
     ''' Builder of time series using a component approach'''
     def __init__(self):
         self.ts = None
@@ -102,7 +72,7 @@ class TimeSeriesGeneratorNP:
         self.ts = self.ts + trend
         return self
 
-    def build_seasonality(self, seasonality_attributes_list : list[SeasonalityAttributesProphetNP]):
+    def build_seasonality(self, seasonality_attributes_list : list[SeasonalityAttributes]):
         ''' Build the seasonal component of the time series '''
         # Trend with changes
         if self.ts is None:
@@ -137,26 +107,6 @@ class TimeSeriesGeneratorNP:
         noise = np.random.normal(0, noise_std, self.ts.size)
         self.components['noise'] = noise
         self.ts = self.ts + noise
-        return self
-
-    def build_holidays(self, holidays_intervals : list, holiday_std):
-        ''' Build the spike component of the time series '''
-
-
-        if self.ts is None:
-            raise ValueError('Time series baseline has not been built')
-
-
-        # Add holidays
-        holidays_prior = np.random.normal(0, holiday_std, len(holidays_intervals))
-        timestamps = np.arange(self.ts.size)
-        holidays = np.zeros(self.ts.size)
-        for t in timestamps:
-            for i,holiday_interval in enumerate(holidays_intervals):
-                if t in holiday_interval:
-                    holidays[t] += holidays_prior[i]
-        self.components['holidays'] = holidays
-        self.ts += holidays
         return self
 
     def build_inactivity(self, inactivity_prob):
@@ -243,11 +193,8 @@ class TimeSeriesGeneratorNP:
 
         return self
 
-    def generate(self):
+    def get_series(self):
         return self.ts
-
-    def get_start_date(self):
-        return (pd.Timestamp.today() + pd.Timedelta(days=1)).strftime('%Y-%m-%d')
 
     def get_components(self):
         return self.components
@@ -257,16 +204,15 @@ class TimeSeriesGeneratorNP:
         self.components = {}
         return self
 
-class TimeSeriesDirectorNP:
-    def __init__(self, time_series_generator: TimeSeriesGeneratorNP, config: ParametersGenerationConfigsNP):
-        self.time_series_generator = time_series_generator
+class TimeSeriesGeneratorComponents:
+    def __init__(self, time_series_components: TimeSeriesComponents, config: dict):
+        self.time_series_components = time_series_components
         self.config = config
 
     def _baseline_parameters_generation(self):
         ''' Generate the parameters for the baseline component using the configuration file'''
-        baseline_config = self.config.baseline
-        num_years = np.random.choice(np.arange(1, baseline_config["n_years_max"] + 1))
-        num_units = num_years * 365
+        baseline_config = self.config["baseline"]
+        num_units = np.random.choice(np.arange(baseline_config["n_units_min"], baseline_config["n_units_max"] + 1))
         if baseline_config["unit_is_energy"]:
             baseline_value = np.random.uniform(baseline_config["baseline_min"], baseline_config["baseline_max"])
             daily_hours = np.random.uniform(0, 24)
@@ -282,7 +228,7 @@ class TimeSeriesDirectorNP:
 
     def _trend_parameters_generation(self, num_units, baseline_value):
         ''' Generate the parameters for the trend component using the configuration file'''
-        trend_config = self.config.trend
+        trend_config = self.config["trend"]
         num_shifts = np.sum(np.random.choice(np.arange(1,trend_config["max_shift_year"] + 1), num_units // 365) )
         change_points = np.random.choice(np.arange(1, num_units), num_shifts, replace=False)
         change_points = np.sort(change_points)
@@ -309,7 +255,7 @@ class TimeSeriesDirectorNP:
 
     def _seasonal_parameters_generation(self, baseline_value):
         ''' Generate the parameters for the seasonal component using the configuration file'''
-        seasonal_config = self.config.seasonal
+        seasonal_config = self.config["seasonal"]
         seasonality_attributes_list = []
         frequencies = seasonal_config["frequencies"]
         logger.info("\n\n SEASONALITY")
@@ -324,44 +270,20 @@ class TimeSeriesDirectorNP:
                     coefficients.append((a, b))
                 logger.info(
                     f"Seasonality : Frequency -> {frequency}, N -> {parameters_number} , Coefficients -> {coefficients}")
-                seasonality_attributes_list.append(SeasonalityAttributesProphetNP(frequency, parameters_number, coefficients))
+                seasonality_attributes_list.append(SeasonalityAttributes(frequency, parameters_number, coefficients))
         return seasonality_attributes_list
 
     def _noise_parameters_generation(self, baseline_value):
         ''' Generate the parameters for the noise component using the configuration file'''
-        noise_config = self.config.noise
+        noise_config = self.config["noise"]
         noise_std = np.random.uniform(0, noise_config["std_max"]) * baseline_value
         logger.info("\n\n NOISE")
         logger.info(f"Noise : Standard Deviation -> {noise_std}")
         return noise_std
 
-    def _holidays_parameters_generation(self, num_units, baseline_value):
-        ''' Generate the parameters for the holidays component using the configuration file'''
-        holidays_config = self.config.holidays
-        holidays_std = np.random.uniform(0, holidays_config["std_max"]) * baseline_value
-        logger.info("\n\n HOLIDAYS")
-        logger.info(f"Holidays : Standard Deviation -> {holidays_std}")
-        holidays_per_year = np.random.choice(np.arange(0, holidays_config["max_number_of_holidays_year"] + 1))
-        holidays_windows = np.random.choice(np.arange(1, holidays_config["holidays_max_window"] + 1), holidays_per_year)
-        holidays_timestamps = [np.random.choice(np.arange(holidays_windows[i], 365 - int(holidays_windows[i]))) for i in range(holidays_per_year)]
-        yearly_intervals = [[holidays_timestamps[i] + j for j in range(-holidays_windows[i], holidays_windows[i] + 1)] for i in range(holidays_per_year)]
-
-        holidays_intervals = []
-        for i in range(len(yearly_intervals)):
-            holiday_intervals = []
-            for j in range(len(yearly_intervals[i])):
-                current = yearly_intervals[i][j]
-                while current < num_units:
-                    holiday_intervals.append(current)
-                    current += 365
-            holiday_intervals = sorted(holiday_intervals)
-            holidays_intervals.append(holiday_intervals)
-            logger.info(f"Holidays : Interval -> {holiday_intervals}")
-        return holidays_intervals, holidays_std
-
     def _inactivity_parameters_generation(self):
         ''' Generate the parameters for the noise component using the configuration file'''
-        inactivity_config = self.config.inactivity
+        inactivity_config = self.config["inactivity"]
         inactivity_prob = np.random.uniform(0, inactivity_config["max_prob"])
         logger.info("\n\n INACTIVITY")
         logger.info(f"Inactivity : Probability -> {inactivity_prob}")
@@ -369,7 +291,7 @@ class TimeSeriesDirectorNP:
 
     def _autoregression_parameters_generation(self):
         ''' Generate the parameters for the autoregressive component using the configuration file'''
-        autoregressive_config = self.config.autoregression
+        autoregressive_config = self.config["autoregression"]
         number_of_lags = np.random.randint(0, autoregressive_config["max_number_of_lags"] + 1 )
         coefficients = []
         for i in range(number_of_lags):
@@ -378,49 +300,53 @@ class TimeSeriesDirectorNP:
         logger.info(f"Autoregression : Number of lags -> {number_of_lags}, Coefficients -> {coefficients}")
         return number_of_lags, coefficients
 
-    def make_ts_conditional(self, ts_flags: TimeSeriesFlagsNP):
+    def generate(self, ts_flags: ComponentsFlags, baseline=None):
         '''
         Use the builder to make the time series with the components specified by ts_flags and generating randomly
         the parameters using the configurations
         '''
-        self.time_series_generator.reset()
+        self.time_series_components.reset()
 
         # Build the baseline
-        num_units, baseline_value, max_value, sum_value = self._baseline_parameters_generation()
-        self.time_series_generator.build_baseline(num_units, baseline_value)
+        if baseline is None:
+            num_units, baseline_value, max_value, sum_value = self._baseline_parameters_generation()
+        else:
+            num_units = baseline["num_units"]
+            baseline_value = baseline["baseline_value"]
+            max_value = baseline["max_value"]
+            sum_value = baseline["sum_value"]
+
+
+        self.time_series_components.build_baseline(num_units, baseline_value)
 
         # Build the trend
         if ts_flags.trend:
-            self.time_series_generator.build_trend(*self._trend_parameters_generation(num_units, baseline_value))
+            self.time_series_components.build_trend(*self._trend_parameters_generation(num_units, baseline_value))
 
         # Build the seasonality
         if ts_flags.seasonal:
-            self.time_series_generator.build_seasonality(self._seasonal_parameters_generation(baseline_value))
+            self.time_series_components.build_seasonality(self._seasonal_parameters_generation(baseline_value))
 
         # Build the noise
         if ts_flags.noise:
-            self.time_series_generator.build_noise(self._noise_parameters_generation(baseline_value))
-
-        # Build the holidays
-        if ts_flags.holidays:
-            self.time_series_generator.build_holidays(*self._holidays_parameters_generation(num_units, baseline_value))
+            self.time_series_components.build_noise(self._noise_parameters_generation(baseline_value))
 
         # Build the autoregression component
         if ts_flags.autoregression:
-            self.time_series_generator.build_autoregression(*self._autoregression_parameters_generation())
+            self.time_series_components.build_autoregression(*self._autoregression_parameters_generation())
 
         # Add the scale of min and max
         if ts_flags.interval_constraint:
-            self.time_series_generator.build_min_max(max_value, baseline_value)
+            self.time_series_components.build_min_max(max_value, baseline_value)
 
         # Add inactivities
         if ts_flags.inactivity:
-            self.time_series_generator.build_inactivity(self._inactivity_parameters_generation())
+            self.time_series_components.build_inactivity(self._inactivity_parameters_generation())
 
         # Add the constraints of the sum
         if ts_flags.sum_constraint:
-            self.time_series_generator.build_sum(sum_value)
+            self.time_series_components.build_sum(sum_value)
 
-        return self.time_series_generator.generate()
+        return self.time_series_components.get_series()
 
 

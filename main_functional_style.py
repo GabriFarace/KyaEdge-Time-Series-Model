@@ -1,5 +1,5 @@
 from matplotlib import pyplot as plt
-from time_series_generation.tsg_conditions import TimeSeriesConditionsDirector
+from time_series_generation.tsg_functional_style import TimeSeriesConditionsDirector
 import json
 
 

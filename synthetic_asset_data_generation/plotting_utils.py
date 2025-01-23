@@ -1,7 +1,7 @@
 from matplotlib import pyplot as plt
 import pandas as pd
 
-from synthetic_data_generation.pd_date_utils import create_prophet_dataframe, create_monthly_average_df
+from synthetic_asset_data_generation.pd_date_utils import create_prophet_dataframe, create_monthly_average_df
 
 
 def plot_differences_telemetry(true_telemetry, forecasted_telemetry, today, start_date):

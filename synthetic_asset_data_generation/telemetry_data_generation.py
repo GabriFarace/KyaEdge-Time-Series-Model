@@ -1,22 +1,19 @@
-from synthetic_data_generation.pd_date_utils import days_between_month
-from time_series_generation.tsg_neural_prophet import ParametersGenerationConfigsNP, TimeSeriesDirectorNP, TimeSeriesGeneratorNP
-from time_series_generation.tsg_conditions import TimeSeriesGeneratorConditions, Weekday
+from synthetic_asset_data_generation.pd_date_utils import days_between_month
+from time_series_generation.tsg_components_style import TimeSeriesGeneratorComponents, ComponentsFlags
+from time_series_generation.tsg_functional_style import TimeSeriesGeneratorConditions, Weekday
 
 
 class TelemetryDataGeneratorWrapper:
     ''' Wrap the neural prophet time series generator and build the telemetry'''
 
-    def __init__(self, time_series_generator : TimeSeriesGeneratorNP, config : ParametersGenerationConfigsNP, tsg_conditions: TimeSeriesGeneratorConditions):
+    def __init__(self, time_series_generator_components: TimeSeriesGeneratorComponents, time_series_generator_functional : TimeSeriesGeneratorConditions):
 
-        self.time_series_generator = time_series_generator
-        self.config = config
-        self.tsd = TimeSeriesDirectorNP(self.time_series_generator, self.config)
-        self.tsg_conditions = tsg_conditions
+        self.time_series_generator_components = time_series_generator_components
+        self.time_series_generator_functional = time_series_generator_functional
 
 
-    def generate_telemetry_data(self, asset_data):
+    def generate_telemetry_data(self, asset_data, components = bool):
         ''' Generate sintethic telemetry data using the generator, assume hours as unit of the telemetry'''
-        self.time_series_generator.reset()
 
         # Build the baseline
         num_units = 365 * asset_data["category_data"]["useful_life_years"]
@@ -28,25 +25,15 @@ class TelemetryDataGeneratorWrapper:
 
         print(f" NUMBER OF DAYS {num_units}, BASELINE VALUE {baseline_value}")
 
-        # Build the baseline
-        self.time_series_generator.build_baseline(num_units, baseline_value)
+        baseline = {
+            "num_units" : num_units,
+            "baseline_value" : baseline_value,
+            "max_value" : max_value,
+            "sum_value" : sum_value
+        }
 
-        # Build the trend
-        self.time_series_generator.build_trend(*self.tsd._trend_parameters_generation(num_units, baseline_value))
 
-        # Build the seasonality
-        self.time_series_generator.build_seasonality(self.tsd._seasonal_parameters_generation(baseline_value))
-
-        # Build the noise
-        self.time_series_generator.build_noise(self.tsd._noise_parameters_generation(baseline_value))
-
-        # Normalize (constraint of the max)
-        self.time_series_generator.build_min_max(max_value, baseline_value)
-
-        # Add the constraints of the sum
-        self.time_series_generator.build_sum(sum_value)
-
-        return self.time_series_generator.generate().tolist()
+        return self.time_series_generator_components.generate(ComponentsFlags(trend=True, seasonal=True, noise=True, inactivity=False, autoregression=False, interval_constraint=True, sum_constraint=True), baseline=baseline)
 
     def generate_telemetry_data_c(self, asset_data):
         ''' Generate sintethic telemetry data using the generator, assume hours as unit of the telemetry'''

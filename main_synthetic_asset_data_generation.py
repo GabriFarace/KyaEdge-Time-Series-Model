@@ -2,15 +2,15 @@ import json
 import pandas as pd
 import os
 
-from synthetic_data_generation.asset_data_generation import AssetDataGenerator
-from synthetic_data_generation.estimators import AssetScoresEstimator, get_forecasted_telemetry, \
+from synthetic_asset_data_generation.asset_data_generation import AssetDataGenerator
+from synthetic_asset_data_generation.estimators import AssetScoresEstimator, get_forecasted_telemetry, \
     AggregateScoresEstimator
-from synthetic_data_generation.pd_date_utils import days_between_dates, compact_into_months, months_between_inclusive
-from synthetic_data_generation.plotting_utils import plot_differences_telemetry, plot_differences_telemetry_months, \
+from synthetic_asset_data_generation.pd_date_utils import days_between_dates, compact_into_months, months_between_inclusive
+from synthetic_asset_data_generation.plotting_utils import plot_differences_telemetry, plot_differences_telemetry_months, \
     plot_leasing_risk, plot_lower_upper, plot_quality_rating, plot_esg_rating
-from synthetic_data_generation.telemetry_data_generation import TelemetryDataGeneratorWrapper
-from time_series_generation.tsg_conditions import TimeSeriesGeneratorConditions
-from time_series_generation.tsg_neural_prophet import TimeSeriesGeneratorNP, ParametersGenerationConfigsNP
+from synthetic_asset_data_generation.telemetry_data_generation import TelemetryDataGeneratorWrapper
+from time_series_generation.tsg_functional_style import TimeSeriesGeneratorConditions
+from time_series_generation.tsg_components_style import TimeSeriesComponents
 
 
 def aggregates_scores_main(name_input):
@@ -151,7 +151,7 @@ def generate_loop(num_generation, name_output):
 
     asset_data_generator = AssetDataGenerator(cities_data=cities_data, categories=categories)
 
-    telemetry_data_generator = TelemetryDataGeneratorWrapper(time_series_generator=TimeSeriesGeneratorNP(), config=ParametersGenerationConfigsNP(config), tsg_conditions=TimeSeriesGeneratorConditions())
+    telemetry_data_generator = TelemetryDataGeneratorWrapper(time_series_generator=TimeSeriesComponents(), config=config, tsg_conditions=TimeSeriesGeneratorConditions())
     data = []
 
 

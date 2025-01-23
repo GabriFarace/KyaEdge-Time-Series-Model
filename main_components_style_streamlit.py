@@ -1,24 +1,24 @@
 import matplotlib.pyplot as plt
 import streamlit as st
 import json
-from time_series_generation.tsg_neural_prophet import ParametersGenerationConfigsNP, TimeSeriesDirectorNP, \
-    TimeSeriesGeneratorNP, TimeSeriesFlagsNP
+from time_series_generation.tsg_components_style import TimeSeriesGeneratorComponents, \
+    TimeSeriesComponents, ComponentsFlags
 
 
 # Step 1: Fixed Instances (using caching)
 @st.cache_resource
 def initialize_time_series_objects():
 
-    with open("json_files/tsg_config_neural_prophet.json", "r") as config_file:
-        config_data = json.load(config_file)
-    config = ParametersGenerationConfigsNP(reset_configuration=config_data)
-    # Initialize Time Series Generator and Director
-    tsd = TimeSeriesDirectorNP(TimeSeriesGeneratorNP(), config)
+    with open("json_files/config_generator_components_style.json", "r") as config_file:
+        config = json.load(config_file)
 
-    return tsd, config
+    # Initialize Time Series Generator and Director
+    tsg = TimeSeriesGeneratorComponents(TimeSeriesComponents(), config)
+
+    return tsg, config
 
 # Retrieve cached instances
-tsd, config = initialize_time_series_objects()
+tsg, config = initialize_time_series_objects()
 
 # Step 2: Streamlit UI
 st.title("Time Series Generator")
@@ -31,7 +31,6 @@ with st.form("Time Series Generation Parameters"):
             "trend": True,
             "seasonality": False,
             "noise": False,
-            "holidays": False,
             "inactivity" : False,
             "autoregression" : False,
             "sum_constraint" : False,
@@ -61,9 +60,6 @@ with st.form("Time Series Generation Parameters"):
         st.session_state["components"]["autoregression"] = st.checkbox(
             "Enable autoregression", value=st.session_state["components"]["autoregression"]
         )
-        st.session_state["components"]["holidays"] = st.checkbox(
-            "Enable Holidays", value=st.session_state["components"]["holidays"]
-        )
         st.session_state["components"]["inactivity"] = st.checkbox(
             "Enable Inactivity", value=st.session_state["components"]["inactivity"]
         )
@@ -75,7 +71,8 @@ with st.form("Time Series Generation Parameters"):
         )
 
     with st.expander("Baseline Component Settings"):
-        max_years = st.number_input("Maximum Number of Years", value=20)
+        max_units = st.number_input("Maximum Number of units", value=7300)
+        min_units = st.number_input("Maximum Number of units", value=365)
         baseline_min = st.number_input("Minimum baseline value", value=10)
         baseline_max = st.number_input("Maximum baseline value", value=500)
         unit_is_energy = st.checkbox(
@@ -134,16 +131,6 @@ with st.form("Time Series Generation Parameters"):
             value=0.1,
         )
 
-    with st.expander("Holidays Component Settings"):
-        holiday_std_max = st.number_input(
-            "Maximum ratio value of the standard deviation for the holidays",
-            value=1,
-        )
-        max_holidays = st.number_input("Maximum number of holidays per year", value=5)
-        max_window = st.number_input(
-            "Maximum value of windows per holiday", value=3
-        )
-
     with st.expander("Inactivity Component Settings"):
         inactivity_max_prob = st.number_input(
             "Maximum probability value of inactivity (0)", value=0.01
@@ -157,32 +144,29 @@ with st.form("Time Series Generation Parameters"):
 if submitted:
     print("\n\n")
     # Update Configurations
-    config.baseline["n_years_max"] = max_years
-    config.baseline["baseline_min"] = baseline_min
-    config.baseline["baseline_max"] = baseline_max
-    config.baseline["unit_is_energy"] = unit_is_energy
-    config.trend["max_shift_year"] = max_shift_year
-    config.trend["value_change_ratio"] = value_change_ratio
-    config.noise["std_max"] = noise_std_max
-    config.autoregression["max_number_of_lags"] = max_number_of_lags
-    config.autoregression["max_coefficient"] = max_coefficient
-    config.holidays["max_number_of_holidays_year"] = max_holidays
-    config.holidays["holidays_max_window"] = max_window
-    config.holidays["std_max"] = holiday_std_max
-    config.seasonal["frequencies"] = f
-    config.inactivity["max_prob"] = inactivity_max_prob
+    tsg.config["baseline"]["n_units_max"] = max_units
+    tsg.config["baseline"]["n_units_min"] = min_units
+    tsg.config["baseline"]["baseline_min"] = baseline_min
+    tsg.config["baseline"]["baseline_max"] = baseline_max
+    tsg.config["baseline"]["unit_is_energy"] = unit_is_energy
+    tsg.config["trend"]["max_shift_year"] = max_shift_year
+    tsg.config["trend"]["value_change_ratio"] = value_change_ratio
+    tsg.config["noise"]["std_max"] = noise_std_max
+    tsg.config["autoregression"]["max_number_of_lags"] = max_number_of_lags
+    tsg.config["autoregression"]["max_coefficient"] = max_coefficient
+    tsg.config["seasonal"]["frequencies"] = f
+    tsg.config["inactivity"]["max_prob"] = inactivity_max_prob
 
     # Make the time series with the director
-    time_series = tsd.make_ts_conditional(
-        TimeSeriesFlagsNP(
-            st.session_state["components"]["trend"],
-            st.session_state["components"]["seasonality"],
-            st.session_state["components"]["noise"],
-            st.session_state["components"]["holidays"],
-            st.session_state["components"]["inactivity"],
-            st.session_state["components"]["autoregression"],
-            st.session_state["components"]["interval_constraint"],
-            st.session_state["components"]["sum_constraint"]
+    time_series = tsg.generate(
+        ComponentsFlags(
+            trend=st.session_state["components"]["trend"],
+            seasonal=st.session_state["components"]["seasonality"],
+            noise=st.session_state["components"]["noise"],
+            inactivity=st.session_state["components"]["inactivity"],
+            autoregression=st.session_state["components"]["autoregression"],
+            interval_constraint=st.session_state["components"]["interval_constraint"],
+            sum_constraint=st.session_state["components"]["sum_constraint"]
         )
     )
 

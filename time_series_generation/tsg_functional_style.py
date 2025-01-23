@@ -4,8 +4,8 @@ import pandas as pd
 import numpy as np
 from enum import Enum
 
-from synthetic_data_generation.asset_data_generation import AssetDataGenerator
-from synthetic_data_generation.pd_date_utils import days_between_month
+from synthetic_asset_data_generation.asset_data_generation import AssetDataGenerator
+from synthetic_asset_data_generation.pd_date_utils import days_between_month
 
 
 class Weekday(Enum):
@@ -200,23 +200,17 @@ class TimeSeriesGeneratorConditions:
 
 
 class TimeSeriesConditionsDirector:
-    def __init__(self, categories : dict, cities_data : dict, config : dict):
+    def __init__(self, config : dict):
         self.time_series_generator = TimeSeriesGeneratorConditions()
 
-        self.categories = categories
-
-        self.cities_data = cities_data
-
-        self.asset_data_generator = AssetDataGenerator(cities_data=cities_data, categories=categories)
 
         self.config = config
 
         self.time_series_data = None
 
 
-    def _build_baseline(self):
+    def _build_baseline(self, asset_data):
         ''' Build the baseline starting from the data obtained by the asset data generator'''
-        asset_data = self.asset_data_generator.generate_new_asset()
 
         # Get baseline data
         num_days_life = 365 * asset_data["category_data"]["useful_life_years"]
@@ -228,9 +222,8 @@ class TimeSeriesConditionsDirector:
             f"ASSET CATEGORY : {asset_data["category_data"]["name"]}, BASELINE VALUE: {baseline_value}, SUM VALUE: {sum_value}")
 
         # Generate noise and contract data
-        start_date = self.config["asset_start_date"]
-        years = int(np.random.choice(np.arange(self.config["contract_years_range"][0], self.config["contract_years_range"][1] + 1)))
-        contract_months = years * 12
+        start_date = asset_data["start_date"]
+        contract_months = asset_data["contract_data"]["contract_months"]
         num_units = days_between_month(start_date, contract_months)
         noise_ratio_std = np.random.uniform(0, self.config["max_ratio_noise_std"])
         print(f"START DATE: {start_date}, NUMBER OF DAYS: {num_units}, NOISE RATIO STD: {noise_ratio_std}")
@@ -491,9 +484,7 @@ class TimeSeriesConditionsDirector:
         # Save data
         self.time_series_data["yearly_seasonality"] = yearly_conditions_array
 
-
-
-    def make_ts_conditions(self):
+    def generate(self, asset_data):
         '''
         Use the builder to make the time series starting from the asset data generator and generating randomly
         conditions using the configurations
@@ -504,7 +495,7 @@ class TimeSeriesConditionsDirector:
         self.time_series_generator.reset()
 
         # Build the baseline
-        self._build_baseline()
+        self._build_baseline(asset_data)
 
         # Create the random changepoints
         self._build_changepoints()

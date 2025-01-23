@@ -65,9 +65,6 @@ def create_prophet_dataframe(time_series, start_date=None):
   return prophet_df  
 
 
-
-
-
 def days_between_dates(start_date_str, end_date_str):
     ''' Return the number of days between two dates.'''
 

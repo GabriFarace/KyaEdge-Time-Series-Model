@@ -1,15 +1,15 @@
 import json
-import logging
-from tsg_neural_prophet import TimeSeriesDirectorNP, TimeSeriesGeneratorNP, ParametersGenerationConfigsNP
-from tsg_neural_prophet import TimeSeriesFlagsNP
 import matplotlib.pyplot as plt
+
+from time_series_generation.tsg_neural_prophet import ParametersGenerationConfigsNP, TimeSeriesDirectorNP, \
+    TimeSeriesGeneratorNP, TimeSeriesFlagsNP
+
 
 def generate_ts_main():
 
-    with open("tsg_config_neural_prophet.json", "r") as config_file:
+    with open("json_files/tsg_config_neural_prophet.json", "r") as config_file:
         config_data = json.load(config_file)
-    config = ParametersGenerationConfigsNP()
-    config.reset(config_data)
+    config = ParametersGenerationConfigsNP(reset_configuration=config_data)
     tsd = TimeSeriesDirectorNP(TimeSeriesGeneratorNP(), config)
 
     finish = False

@@ -2,7 +2,7 @@ import numpy as np
 from prophet import Prophet
 import math
 
-from utils import create_prophet_dataframe
+from syntethic_data_generation.pd_date_utils import create_prophet_dataframe
 
 
 class LeasingRiskScoresEstimator:
@@ -86,7 +86,7 @@ class AssetQualityRatingScoresEstimator:
     def _get_operational_use_curve(asset_data, telemetry_data):
         ''' Return the operational use curve'''
 
-        # TODO baseline is fixed and set to useful_life/number of days
+        # todo Baseline is fixed and set to useful_life/number of days
         lower_bound_curve = []
         upper_bound_curve = []
         mean_curve = []

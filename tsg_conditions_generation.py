@@ -1,7 +1,5 @@
-
 from matplotlib import pyplot as plt
-from time_series_generation.pattern_style.tsg_conditions import TimeSeriesGeneratorConditions, \
-    TimeSeriesConditionsDirector
+from time_series_generation.tsg_conditions import TimeSeriesConditionsDirector
 import json
 
 
@@ -28,7 +26,7 @@ def generate_ts_loop(num_generation, name_output, plotting):
 
         data.append(time_series_data)
 
-    with open(f'{name_output}.json', 'w') as json_file:
+    with open(f'json_files/{name_output}.json', 'w') as json_file:
         json.dump(data, json_file, indent=4)
 
 

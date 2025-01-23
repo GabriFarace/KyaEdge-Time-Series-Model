@@ -1,5 +1,3 @@
-import json
-
 import numpy as np
 
 
@@ -39,20 +37,11 @@ seismic_hazard_protective_measures = [
 
 class AssetDataGenerator:
 
-    def __init__(self, cities_data=None, categories=None):
+    def __init__(self, cities_data : dict, categories : dict):
 
-        if cities_data is None:
-            with open("cities_data.json", "r") as f:
-                self.cities_data = json.load(f)
-        else:
-            self.cities_data = cities_data
+        self.cities_data = cities_data
 
-
-        if categories is None:
-            with open("categories.json", "r") as f:
-                self.categories = json.load(f)
-        else:
-            self.categories = categories
+        self.categories = categories
 
         self.asset_counter = 0
 

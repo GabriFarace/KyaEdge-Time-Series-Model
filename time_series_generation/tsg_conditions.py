@@ -3,10 +3,9 @@ from typing import Union
 import pandas as pd
 import numpy as np
 from enum import Enum
-import json
 
 from syntethic_data_generation.asset_data_generation import AssetDataGenerator
-from syntethic_data_generation.utils import days_between_month
+from syntethic_data_generation.pd_date_utils import days_between_month
 
 
 class Weekday(Enum):
@@ -201,19 +200,16 @@ class TimeSeriesGeneratorConditions:
 
 
 class TimeSeriesConditionsDirector:
-    def __init__(self):
+    def __init__(self, categories : dict, cities_data : dict, config : dict):
         self.time_series_generator = TimeSeriesGeneratorConditions()
 
-        with open(f"../../syntethic_data_generation/categories.json", "r") as f:
-            categories = json.load(f)
+        self.categories = categories
 
-        with open(f"../../syntethic_data_generation/cities_data.json", "r") as f:
-            cities_data = json.load(f)
+        self.cities_data = cities_data
 
         self.asset_data_generator = AssetDataGenerator(cities_data=cities_data, categories=categories)
 
-        with open(f"config_tsg_conditions.json", "r") as f:
-            self.config = json.load(f)
+        self.config = config
 
         self.time_series_data = None
 

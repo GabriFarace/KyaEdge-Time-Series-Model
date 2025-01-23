@@ -1,9 +1,7 @@
 import logging
 import numpy as np
 import pandas as pd
-import json
 
-#TODO fix the component returned by the generator (normalization is needed when scaling)
 
 # Configure the logger
 logging.basicConfig(
@@ -32,9 +30,9 @@ class SeasonalityAttributesProphetNP:
 
 class ParametersGenerationConfigsNP:
 
-    def __init__(self):
+    def __init__(self, reset_configuration : dict):
         # Load configuration file
-        #with open("tsg_config_prophet.json", "r") as config_file:
+        self.reset_configuration  = reset_configuration
 
         self.baseline = {}
         self.trend = {}
@@ -43,46 +41,14 @@ class ParametersGenerationConfigsNP:
         self.holidays = {}
         self.inactivity = {}
         self.autoregression = {}
-        self.reset()
+        self.set()
 
-    def reset(self, c=None):
-        config = {
-          "baseline" : {
-            "n_years_max" : 20,
-            "baseline_min" : 10,
-            "baseline_max" : 500,
-            "unit_is_energy": True
-          },
-          "trend" : {
-            "max_shift_year" : 5,
-            "value_change_ratio" : 0.5
-          },
-          "seasonal" : {
-            "frequencies" : [
-              {"value" :  7, "params_number": 3, "coeff_ratio_std" :  0.03, "prob" :  0.5},
-              {"value" :  30, "params_number": 5, "coeff_ratio_std" :  0.03, "prob" :  0.5},
-              {"value" :  60, "params_number": 7, "coeff_ratio_std" :  0.03, "prob" :  0.5},
-              {"value" :  365, "params_number": 10, "coeff_ratio_std" :  0.03, "prob" :  0.5}
-              ]
-          },
-          "noise" : {
-            "std_max" : 0.1
-          },
-          "holidays" : {
-            "max_number_of_holidays_year" : 5,
-            "holidays_max_window" : 3,
-            "std_max" : 1
-          },
-          "inactivity" : {
-            "max_prob" : 0.01
-          },
-          "autoregression" : {
-              "max_number_of_lags" : 100,
-              "max_coefficient" : 0.1
-          }
-        }
+    def set(self, c=None):
         if c is not None:
             config = c
+        else:
+            config = self.reset_configuration
+
         self.baseline = config["baseline"]
         self.trend = config["trend"]
         self.seasonal = config["seasonal"]
@@ -97,6 +63,7 @@ class TimeSeriesGeneratorNP:
         self.ts = None
         self.components = {}
 
+    # TODO fix the component returned by the generator (normalization is needed when scaling)
 
     def build_baseline(self, num_units : int, baseline_value : float):
         ''' Build the baseline component of the time series'''

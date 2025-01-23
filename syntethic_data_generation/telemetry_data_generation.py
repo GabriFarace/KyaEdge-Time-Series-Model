@@ -1,18 +1,17 @@
-
-from syntethic_data_generation.utils import days_between_month
-from time_series_generation.neural_prophet_style.tsg_neural_prophet import ParametersGenerationConfigsNP, TimeSeriesDirectorNP, TimeSeriesGeneratorNP
-from time_series_generation.pattern_style.tsg_conditions import TimeSeriesGeneratorConditions, Weekday
+from syntethic_data_generation.pd_date_utils import days_between_month
+from time_series_generation.tsg_neural_prophet import ParametersGenerationConfigsNP, TimeSeriesDirectorNP, TimeSeriesGeneratorNP
+from time_series_generation.tsg_conditions import TimeSeriesGeneratorConditions, Weekday
 
 
 class TelemetryDataGeneratorWrapper:
     ''' Wrap the neural prophet time series generator and build the telemetry'''
 
-    def __init__(self):
+    def __init__(self, time_series_generator : TimeSeriesGeneratorNP, config : ParametersGenerationConfigsNP, tsg_conditions: TimeSeriesGeneratorConditions):
 
-        self.time_series_generator = TimeSeriesGeneratorNP()
-        self.config = ParametersGenerationConfigsNP()
+        self.time_series_generator = time_series_generator
+        self.config = config
         self.tsd = TimeSeriesDirectorNP(self.time_series_generator, self.config)
-        self.tsg_conditions = TimeSeriesGeneratorConditions()
+        self.tsg_conditions = tsg_conditions
 
 
     def generate_telemetry_data(self, asset_data):

@@ -1,8 +1,7 @@
 from matplotlib import pyplot as plt
 import pandas as pd
-import json
 
-from syntethic_data_generation.utils import create_monthly_average_df, create_prophet_dataframe
+from syntethic_data_generation.pd_date_utils import create_prophet_dataframe, create_monthly_average_df
 
 
 def plot_differences_telemetry(true_telemetry, forecasted_telemetry, today, start_date):
@@ -199,44 +198,3 @@ def plot_lower_upper(curves, start_date, name):
     plt.legend()
     plt.show()
 
-
-def plot_main(number_of_asset, index_asset, name_input):
-    ''' Plot the data for a number_of_asset from the data.json file'''
-    with open(f"{name_input}.json", "r") as f:
-        data = json.load(f)
-
-    counter = 0
-
-    i = 0
-    for asset_data in data:
-        i = i + 1
-        if i != index_asset:
-            continue
-
-
-
-        scores = asset_data["scores"]
-
-        plot_differences_telemetry_months(asset_data["true_telemetry"], asset_data["forecasted_telemetry"], asset_data["start_date"])
-
-        plot_leasing_risk(scores["leasing_risk"]["remarketing_value_curve"], scores["leasing_risk"]["residual_debt"], scores["leasing_risk"]["gap_curve"], asset_data["start_date"])
-        plot_lower_upper(scores["leasing_risk"]["remarketing_value_curve"], asset_data["start_date"], "Market Value")
-
-        plot_quality_rating(scores["asset_quality_rating"]["quality_rating_curve"], scores["asset_quality_rating"]["operational_use_curve"], asset_data["start_date"])
-        plot_lower_upper(scores["asset_quality_rating"]["quality_rating_curve"], asset_data["start_date"], "Quality Value")
-        plot_lower_upper(scores["asset_quality_rating"]["operational_use_curve"], asset_data["start_date"],
-                         "Operational Use")
-
-        plot_esg_rating(scores["esg_rating"]["footprint_curve"], scores["esg_rating"]["energy_consumed"], asset_data["start_date"])
-        plot_lower_upper(scores["esg_rating"]["footprint_curve"], asset_data["start_date"], "Footprint Value")
-        plot_lower_upper(scores["esg_rating"]["energy_consumed"], asset_data["start_date"],
-                         "Energy Consumed")
-
-        asset_data.pop("scores")
-        print(asset_data)
-        counter +=1
-        if counter >= number_of_asset:
-            break
-
-if __name__ == '__main__':
-    plot_main(1, 1, name_input="data_t2")

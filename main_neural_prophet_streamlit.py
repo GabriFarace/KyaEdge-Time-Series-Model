@@ -1,16 +1,17 @@
-
-from tsg_neural_prophet import TimeSeriesDirectorNP, TimeSeriesGeneratorNP, ParametersGenerationConfigsNP
-from tsg_neural_prophet import TimeSeriesFlagsNP
 import matplotlib.pyplot as plt
 import streamlit as st
-
+import json
+from time_series_generation.tsg_neural_prophet import ParametersGenerationConfigsNP, TimeSeriesDirectorNP, \
+    TimeSeriesGeneratorNP, TimeSeriesFlagsNP
 
 
 # Step 1: Fixed Instances (using caching)
 @st.cache_resource
 def initialize_time_series_objects():
 
-    config = ParametersGenerationConfigsNP()
+    with open("json_files/tsg_config_neural_prophet.json", "r") as config_file:
+        config_data = json.load(config_file)
+    config = ParametersGenerationConfigsNP(reset_configuration=config_data)
     # Initialize Time Series Generator and Director
     tsd = TimeSeriesDirectorNP(TimeSeriesGeneratorNP(), config)
 

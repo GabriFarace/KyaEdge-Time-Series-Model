@@ -1,7 +1,10 @@
-from tsg_conditions import *
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
+from time_series_generation.tsg_conditions import Weekday, TimeSeriesGeneratorConditions
+
+
 def is_valid_date(date_str):
     try:
         pd.to_datetime(date_str, format='%Y-%m-%d')

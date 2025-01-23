@@ -1,6 +1,7 @@
 from matplotlib import pyplot as plt
 
 from synthetic_asset_data_generation.asset_data_generation import AssetDataGenerator
+from time_series_generation.tsg_components_style import TimeSeriesGeneratorComponents
 from time_series_generation.tsg_functional_style import TimeSeriesGeneratorFunctional
 import json
 
@@ -12,21 +13,23 @@ def generate_ts_loop(num_generation, name_output, plotting):
         cities_data = json.load(f)
     with open(f"json_files/categories.json", "r") as f:
         categories = json.load(f)
-    with open(f"json_files/config_tsg_conditions.json", "r") as f:
+    with open(f"json_files/config_generator_functional_style.json", "r") as f:
         config = json.load(f)
+    with open(f"json_files/config_generator_components_style.json", "r") as f:
+        config2 = json.load(f)
 
-    time_series_director = TimeSeriesGeneratorFunctional(config=config)
+
     data = []
-    asset_data_generator = AssetDataGenerator(cities_data=cities_data,)
+    asset_data_generator = AssetDataGenerator(cities_data=cities_data, categories=categories, time_series_generator_functional=TimeSeriesGeneratorFunctional(config=config), time_series_generator_components=TimeSeriesGeneratorComponents(config=config2))
 
 
     for i in range(num_generation):
-        time_series_data = time_series_director.generate(asset_data=asset_data)
+        time_series_data = asset_data_generator.generate_new_asset(components=False)["telemetry"]
 
         if plotting:
             # Plot the generated time series
             fig, ax = plt.subplots()
-            ax.plot(time_series_data["time_series"], label="Generated Time Series")
+            ax.plot(time_series_data, label="Generated Time Series")
             ax.set_title("Time Series")
             ax.set_xlabel("Time (Days)")
             ax.set_ylabel("Value")

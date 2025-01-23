@@ -8,9 +8,8 @@ from synthetic_asset_data_generation.estimators import AssetScoresEstimator, get
 from synthetic_asset_data_generation.pd_date_utils import days_between_dates, compact_into_months, months_between_inclusive
 from synthetic_asset_data_generation.plotting_utils import plot_differences_telemetry, plot_differences_telemetry_months, \
     plot_leasing_risk, plot_lower_upper, plot_quality_rating, plot_esg_rating
-from synthetic_asset_data_generation.telemetry_data_generation import TelemetryDataGeneratorWrapper
-from time_series_generation.tsg_functional_style import TimeSeriesFunctional
-from time_series_generation.tsg_components_style import TimeSeriesComponents
+from time_series_generation.tsg_functional_style import TimeSeriesFunctional, TimeSeriesGeneratorFunctional
+from time_series_generation.tsg_components_style import TimeSeriesComponents, TimeSeriesGeneratorComponents
 
 
 def aggregates_scores_main(name_input):
@@ -146,21 +145,23 @@ def generate_loop(num_generation, name_output):
         cities_data = json.load(f)
     with open(f"json_files/categories.json", "r") as f:
         categories = json.load(f)
-    with open(f"json_files/tsg_config_neural_prophet.json", "r") as f:
+    with open(f"json_files/config_generator_functional_style.json", "r") as f:
         config = json.load(f)
+    with open(f"json_files/config_generator_components_style.json", "r") as f:
+        config2 = json.load(f)
 
-    asset_data_generator = AssetDataGenerator(cities_data=cities_data, categories=categories)
 
-    telemetry_data_generator = TelemetryDataGeneratorWrapper(time_series_generator=TimeSeriesComponents(), config=config, tsg_conditions=TimeSeriesFunctional())
+    asset_data_generator = AssetDataGenerator(cities_data=cities_data, categories=categories, time_series_generator_functional=TimeSeriesGeneratorFunctional(config=config), time_series_generator_components=TimeSeriesGeneratorComponents(config=config2))
+
     data = []
 
 
     for i in range(num_generation):
 
-        asset_data = asset_data_generator.generate_new_asset()
+        asset_data = asset_data_generator.generate_new_asset(components=True)
 
-        # todo use a variable to decide which generator
-        telemetry_data = telemetry_data_generator.generate_telemetry_data(asset_data)
+
+        telemetry_data = asset_data["telemetry"]
 
 
         today = pd.Timestamp.today().strftime('%Y-%m-%d')
@@ -188,6 +189,7 @@ def generate_loop(num_generation, name_output):
         asset_data["scores"] = AssetScoresEstimator.get_scores(asset_data, telemetry_input, number_of_units)
         asset_data.pop("category_data")
         asset_data.pop("city_data")
+        asset_data.pop("telemetry")
         data.append(asset_data)
 
     with open(f'json_files/{name_output}.json', 'w') as json_file:

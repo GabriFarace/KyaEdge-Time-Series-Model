@@ -1,5 +1,7 @@
 from matplotlib import pyplot as plt
-from time_series_generation.tsg_functional_style import TimeSeriesConditionsDirector
+
+from synthetic_asset_data_generation.asset_data_generation import AssetDataGenerator
+from time_series_generation.tsg_functional_style import TimeSeriesGeneratorFunctional
 import json
 
 
@@ -13,12 +15,13 @@ def generate_ts_loop(num_generation, name_output, plotting):
     with open(f"json_files/config_tsg_conditions.json", "r") as f:
         config = json.load(f)
 
-    time_series_director = TimeSeriesConditionsDirector(categories=categories, config=config, cities_data=cities_data)
+    time_series_director = TimeSeriesGeneratorFunctional(config=config)
     data = []
+    asset_data_generator = AssetDataGenerator(cities_data=cities_data,)
 
 
     for i in range(num_generation):
-        time_series_data = time_series_director.make_ts_conditions()
+        time_series_data = time_series_director.generate(asset_data=asset_data)
 
         if plotting:
             # Plot the generated time series

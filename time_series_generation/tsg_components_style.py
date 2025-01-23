@@ -1,6 +1,5 @@
 import logging
 import numpy as np
-import pandas as pd
 
 
 # Configure the logger
@@ -205,8 +204,8 @@ class TimeSeriesComponents:
         return self
 
 class TimeSeriesGeneratorComponents:
-    def __init__(self, time_series_components: TimeSeriesComponents, config: dict):
-        self.time_series_components = time_series_components
+    def __init__(self, config: dict):
+        self.time_series_components = TimeSeriesComponents()
         self.config = config
 
     def _baseline_parameters_generation(self):

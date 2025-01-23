@@ -1,6 +1,8 @@
 import numpy as np
 
-
+from synthetic_asset_data_generation.pd_date_utils import days_between_month
+from time_series_generation.tsg_components_style import TimeSeriesGeneratorComponents, ComponentsFlags
+from time_series_generation.tsg_functional_style import TimeSeriesGeneratorFunctional
 
 NUMBER_OF_LESSORS = 3
 START_DATE =  "2021-01-01"
@@ -37,15 +39,18 @@ seismic_hazard_protective_measures = [
 
 class AssetDataGenerator:
 
-    def __init__(self, cities_data : dict, categories : dict):
+    def __init__(self, cities_data : dict, categories : dict, time_series_generator_components: TimeSeriesGeneratorComponents, time_series_generator_functional : TimeSeriesGeneratorFunctional):
 
         self.cities_data = cities_data
 
         self.categories = categories
 
+        self.time_series_generator_components = time_series_generator_components
+        self.time_series_generator_functional = time_series_generator_functional
+
         self.asset_counter = 0
 
-    def generate_new_asset(self) -> dict:
+    def generate_new_asset(self, components) -> dict:
         ''' Generate sintethic asset data : category, contract_data, esg inputs and others'''
         new_asset = {}
         id = self.asset_counter
@@ -85,6 +90,7 @@ class AssetDataGenerator:
 
         new_asset["category_data"] = category
         new_asset["city_data"] = city_data
+        new_asset["telemetry"] = self.generate_telemetry_data(asset_data=new_asset, components=components)
 
         return new_asset
 
@@ -140,7 +146,30 @@ class AssetDataGenerator:
             "seismic_hazard_protective_measures" : seismic_pm
         }
 
+    def generate_telemetry_data(self, asset_data, components=bool):
+        ''' Generate sintethic telemetry data using the generator, assume hours as unit of the telemetry'''
 
+        # Build the baseline
+        num_units = 365 * asset_data["category_data"]["useful_life_years"]
+        baseline_value = asset_data["category_data"]["useful_life_hours"] / num_units
+        max_value = 24
+        sum_value = asset_data["category_data"]["useful_life_hours"]
 
+        num_units = days_between_month(asset_data["start_date"], asset_data["contract_data"]["contract_months"])
 
+        print(f" NUMBER OF DAYS {num_units}, BASELINE VALUE {baseline_value}")
+
+        baseline = {
+            "num_units": num_units,
+            "baseline_value": baseline_value,
+            "max_value": max_value,
+            "sum_value": sum_value
+        }
+
+        if components:
+            return self.time_series_generator_components.generate(
+                ComponentsFlags(trend=True, seasonal=True, noise=True, inactivity=False, autoregression=False,
+                                interval_constraint=True, sum_constraint=True), baseline=baseline)
+        else:
+            return self.time_series_generator_functional.generate(asset_data=asset_data)["time_series"]
 

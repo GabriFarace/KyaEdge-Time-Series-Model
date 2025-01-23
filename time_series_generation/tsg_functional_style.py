@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 from enum import Enum
 
-from synthetic_asset_data_generation.asset_data_generation import AssetDataGenerator
 from synthetic_asset_data_generation.pd_date_utils import days_between_month
 
 
@@ -24,7 +23,7 @@ def is_valid_date(date_str):
     except ValueError:
         return False
 
-class TimeSeriesGeneratorConditions:
+class TimeSeriesFunctional:
     def __init__(self):
         self.ts = None
         self.min_value = None
@@ -199,11 +198,9 @@ class TimeSeriesGeneratorConditions:
         self.min_value  = None
 
 
-class TimeSeriesConditionsDirector:
+class TimeSeriesGeneratorFunctional:
     def __init__(self, config : dict):
-        self.time_series_generator = TimeSeriesGeneratorConditions()
-
-
+        self.time_series_functional = TimeSeriesFunctional()
         self.config = config
 
         self.time_series_data = None
@@ -236,7 +233,7 @@ class TimeSeriesConditionsDirector:
         self.time_series_data["num_units"] = num_units
 
         # Build the baseline
-        self.time_series_generator.build_baseline(num_units=num_units, baseline_value=baseline_value, min_value=min_value,
+        self.time_series_functional.build_baseline(num_units=num_units, baseline_value=baseline_value, min_value=min_value,
                                                 max_value=max_value, sum_value=sum_value,
                                                 noise_ratio_std=noise_ratio_std, start_date=start_date)
 
@@ -252,7 +249,7 @@ class TimeSeriesConditionsDirector:
 
         dates_intervals = []
         for interval in intervals:
-            dates_intervals.append([str(self.time_series_generator.ts["ds"][interval[0]])[:10], str(self.time_series_generator.ts["ds"][interval[1]])[:10] ])
+            dates_intervals.append([str(self.time_series_functional.ts["ds"][interval[0]])[:10], str(self.time_series_functional.ts["ds"][interval[1]])[:10] ])
 
         self.time_series_data["dates_intervals"] = dates_intervals
 
@@ -320,7 +317,7 @@ class TimeSeriesConditionsDirector:
             add_values_c = weekly_conditions["add_values"]
 
             for i,selected_condition in enumerate(selected_conditions):
-                self.time_series_generator.apply_func_condition(condition=selected_condition,
+                self.time_series_functional.apply_func_condition(condition=selected_condition,
                                                               func=lambda x: x + add_values_c[i], start_date=start_date,
                                                               end_date=end_date)
 
@@ -394,7 +391,7 @@ class TimeSeriesConditionsDirector:
             add_values_c = monthly_conditions["add_values"]
 
             for i, selected_condition in enumerate(selected_conditions):
-                self.time_series_generator.apply_func_condition(condition=selected_condition,
+                self.time_series_functional.apply_func_condition(condition=selected_condition,
                                                                 func=lambda x: x + add_values_c[i],
                                                                 start_date=start_date,
                                                                 end_date=end_date)
@@ -426,7 +423,6 @@ class TimeSeriesConditionsDirector:
             current_day += days
 
         return month_day_map
-
 
     def _build_yearly(self):
         ''' Build the yearly seasonality, upon the entire series'''
@@ -477,7 +473,7 @@ class TimeSeriesConditionsDirector:
             add_values_c = yearly_conditions["add_values"]
 
             for i, selected_condition in enumerate(selected_conditions):
-                self.time_series_generator.apply_func_condition(condition=selected_condition,
+                self.time_series_functional.apply_func_condition(condition=selected_condition,
                                                                 func=lambda x: x + add_values_c[i],
                                                                 start_date=start_date,
                                                                 end_date=end_date)
@@ -492,7 +488,7 @@ class TimeSeriesConditionsDirector:
 
         # Reset the data
         self.time_series_data = {}
-        self.time_series_generator.reset()
+        self.time_series_functional.reset()
 
         # Build the baseline
         self._build_baseline(asset_data)
@@ -509,8 +505,8 @@ class TimeSeriesConditionsDirector:
         # Create the yearly seasonality
         self._build_yearly()
 
-        self.time_series_data["time_series"] = self.time_series_generator.ts["y"].tolist()
-        self.time_series_data["ds"] = list(map(lambda x : str(x), self.time_series_generator.ts["ds"].tolist()))
+        self.time_series_data["time_series"] = self.time_series_functional.ts["y"].tolist()
+        self.time_series_data["ds"] = list(map(lambda x : str(x), self.time_series_functional.ts["ds"].tolist()))
 
         return self.time_series_data.copy()
 

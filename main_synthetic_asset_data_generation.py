@@ -9,7 +9,7 @@ from synthetic_asset_data_generation.pd_date_utils import days_between_dates, co
 from synthetic_asset_data_generation.plotting_utils import plot_differences_telemetry, plot_differences_telemetry_months, \
     plot_leasing_risk, plot_lower_upper, plot_quality_rating, plot_esg_rating
 from synthetic_asset_data_generation.telemetry_data_generation import TelemetryDataGeneratorWrapper
-from time_series_generation.tsg_functional_style import TimeSeriesGeneratorConditions
+from time_series_generation.tsg_functional_style import TimeSeriesFunctional
 from time_series_generation.tsg_components_style import TimeSeriesComponents
 
 
@@ -151,7 +151,7 @@ def generate_loop(num_generation, name_output):
 
     asset_data_generator = AssetDataGenerator(cities_data=cities_data, categories=categories)
 
-    telemetry_data_generator = TelemetryDataGeneratorWrapper(time_series_generator=TimeSeriesComponents(), config=config, tsg_conditions=TimeSeriesGeneratorConditions())
+    telemetry_data_generator = TelemetryDataGeneratorWrapper(time_series_generator=TimeSeriesComponents(), config=config, tsg_conditions=TimeSeriesFunctional())
     data = []
 
 

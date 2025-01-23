@@ -1,13 +1,9 @@
-import logging
+
 from tsg_neural_prophet import TimeSeriesDirectorNP, TimeSeriesGeneratorNP, ParametersGenerationConfigsNP
 from tsg_neural_prophet import TimeSeriesFlagsNP
 import matplotlib.pyplot as plt
 import streamlit as st
 
-
-    # TODO add the possibiity of adding a frequency
-    #st.button("Add Frequency", on_click=st.session_state["frequencies"].append({  "value": new_value, "params_number": new_params_number, "coeff_ratio_std": new_coeff_ratio_std, "prob": new_prob}), key=f"add_{idx})
-    # TODO add the possibility of specifying the holidays
 
 
 # Step 1: Fixed Instances (using caching)

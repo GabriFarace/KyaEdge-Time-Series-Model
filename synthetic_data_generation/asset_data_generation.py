@@ -80,7 +80,7 @@ class AssetDataGenerator:
             },
             "protective_measures" : protective_measures
         }
-        # Registration date (We assume asset a registered the 1 of January 2020
+        # Registration date (We assume asset a registered the 1 of January 2021)
         new_asset["start_date"] = START_DATE  # format '%Y-%m-%d'
 
         new_asset["category_data"] = category

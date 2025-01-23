@@ -6,7 +6,14 @@ import json
 def generate_ts_loop(num_generation, name_output, plotting):
     ''' Main loop that generates sinthetic asset data with daily and monthly granularity'''
 
-    time_series_director = TimeSeriesConditionsDirector()
+    with open(f"json_files/cities_data.json", "r") as f:
+        cities_data = json.load(f)
+    with open(f"json_files/categories.json", "r") as f:
+        categories = json.load(f)
+    with open(f"json_files/config_tsg_conditions.json", "r") as f:
+        config = json.load(f)
+
+    time_series_director = TimeSeriesConditionsDirector(categories=categories, config=config, cities_data=cities_data)
     data = []
 
 
@@ -32,4 +39,4 @@ def generate_ts_loop(num_generation, name_output, plotting):
 
 
 if __name__ == '__main__':
-    generate_ts_loop(num_generation=100, name_output="time_series_generated", plotting=False)
+    generate_ts_loop(num_generation=1, name_output="time_series_generated", plotting=False)

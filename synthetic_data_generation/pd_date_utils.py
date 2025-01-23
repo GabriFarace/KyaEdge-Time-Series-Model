@@ -64,7 +64,6 @@ def create_prophet_dataframe(time_series, start_date=None):
 
   return prophet_df  
 
-
 def days_between_dates(start_date_str, end_date_str):
     ''' Return the number of days between two dates.'''
 
@@ -79,7 +78,6 @@ def days_between_dates(start_date_str, end_date_str):
 
     return delta.days + 1
 
-
 def days_between_month(start_date_str, number_of_months):
     '''Function to calculate number of days between start date and start date + number of months'''
     # Convert the start date string to a datetime object
@@ -92,7 +90,6 @@ def days_between_month(start_date_str, number_of_months):
     delta = end_date - start_date
 
     return delta.days
-
 
 def months_between_inclusive(start_date):
     """

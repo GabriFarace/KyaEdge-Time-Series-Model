@@ -10,12 +10,12 @@ from synthetic_data_generation.plotting_utils import plot_differences_telemetry,
     plot_leasing_risk, plot_lower_upper, plot_quality_rating, plot_esg_rating
 from synthetic_data_generation.telemetry_data_generation import TelemetryDataGeneratorWrapper
 from time_series_generation.tsg_conditions import TimeSeriesGeneratorConditions
-from time_series_generation.tsg_neural_prophet import TimeSeriesGeneratorNP
+from time_series_generation.tsg_neural_prophet import TimeSeriesGeneratorNP, ParametersGenerationConfigsNP
 
 
-def aggregates_scores_main():
+def aggregates_scores_main(name_input):
     ''' Read the file data_months and compute the aggregation using the estimators.AggregateScoresEstimator'''
-    with open("json_files/data_months.json", "r") as f:
+    with open(f"json_files/{name_input}.json", "r") as f:
         data = json.load(f)
 
     os.makedirs("json_files/json_data", exist_ok=True)
@@ -73,7 +73,6 @@ def plot_main(number_of_asset, index_asset, name_input):
                          "Energy Consumed")
 
         asset_data.pop("scores")
-        print(asset_data)
         counter +=1
         if counter >= number_of_asset:
             break
@@ -152,7 +151,7 @@ def generate_loop(num_generation, name_output):
 
     asset_data_generator = AssetDataGenerator(cities_data=cities_data, categories=categories)
 
-    telemetry_data_generator = TelemetryDataGeneratorWrapper(time_series_generator=TimeSeriesGeneratorNP(), config=config, tsg_conditions=TimeSeriesGeneratorConditions())
+    telemetry_data_generator = TelemetryDataGeneratorWrapper(time_series_generator=TimeSeriesGeneratorNP(), config=ParametersGenerationConfigsNP(config), tsg_conditions=TimeSeriesGeneratorConditions())
     data = []
 
 
@@ -198,6 +197,6 @@ def generate_loop(num_generation, name_output):
 
 
 if __name__ == '__main__':
-    generate_loop(num_generation=1, name_output="data_t2")
+    #generate_loop(num_generation=1, name_output="data_t2")
     #plot_main(1, 1, name_input="data_t2")
-    #aggregates_scores_main()
+    aggregates_scores_main(name_input="data_t2")

@@ -5,7 +5,7 @@ from time_series_generation.pattern_style.tsg_conditions import TimeSeriesGenera
 import json
 
 
-def generate_ts_loop(num_generation, name_output):
+def generate_ts_loop(num_generation, name_output, plotting):
     ''' Main loop that generates sinthetic asset data with daily and monthly granularity'''
 
     time_series_director = TimeSeriesConditionsDirector()
@@ -15,15 +15,16 @@ def generate_ts_loop(num_generation, name_output):
     for i in range(num_generation):
         time_series_data = time_series_director.make_ts_conditions()
 
-        # Plot the generated time series
-        fig, ax = plt.subplots()
-        ax.plot(time_series_data["time_series"], label="Generated Time Series")
-        ax.set_title("Time Series")
-        ax.set_xlabel("Time (Days)")
-        ax.set_ylabel("Value")
-        ax.legend()
+        if plotting:
+            # Plot the generated time series
+            fig, ax = plt.subplots()
+            ax.plot(time_series_data["time_series"], label="Generated Time Series")
+            ax.set_title("Time Series")
+            ax.set_xlabel("Time (Days)")
+            ax.set_ylabel("Value")
+            ax.legend()
 
-        plt.show()
+            plt.show()
 
         data.append(time_series_data)
 
@@ -33,4 +34,4 @@ def generate_ts_loop(num_generation, name_output):
 
 
 if __name__ == '__main__':
-    generate_ts_loop(num_generation=1, name_output="time_series_generated")
+    generate_ts_loop(num_generation=100, name_output="time_series_generated", plotting=False)

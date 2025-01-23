@@ -200,7 +200,6 @@ class TimeSeriesGeneratorConditions:
         self.min_value  = None
 
 
-
 class TimeSeriesConditionsDirector:
     def __init__(self):
         self.time_series_generator = TimeSeriesGeneratorConditions()
@@ -254,10 +253,11 @@ class TimeSeriesConditionsDirector:
 
     def _build_changepoints(self):
 
-        num_shifts = np.random.choice(np.arange(1, self.config["max_number_changepoints"] + 1))
+        num_shifts = np.random.choice(np.arange(3, self.config["max_number_changepoints"] + 1))
         change_points = np.random.choice(np.arange(self.config["changepoints_start_end_interval"], self.time_series_data["num_units"] - self.config["changepoints_start_end_interval"]), num_shifts, replace=False)
         change_points = np.sort(change_points)
         self.time_series_data["changepoints"] = change_points.tolist()
+        print(f"CHANGEPOINTS : {change_points}")
         change_points = np.concatenate(([0], change_points, [self.time_series_data["num_units"]]))
         intervals = [(int(change_points[i]), int(change_points[i + 1] - 1)) for i in range(change_points.size - 1)]
 
@@ -277,7 +277,7 @@ class TimeSeriesConditionsDirector:
         if np.random.choice([True, False], p=[self.config["probability_general_seasonality"], 1 - self.config["probability_general_seasonality"]]):
             num_conditions = np.random.choice(np.arange(1, self.config["max_conditions_week"] + 1))
             conditions = np.random.choice(weekdays_array, num_conditions, replace=False).tolist()
-            add_values = np.random.uniform(-self.config["max_ratio_add_value_std"] * self.time_series_data["baseline_value"], self.config["max_ratio_add_value_std"] * self.time_series_data["baseline_value"], num_conditions).tolist()
+            add_values = np.random.normal(0, self.config["max_ratio_add_value_std"] * self.time_series_data["baseline_value"], num_conditions).tolist()
 
             general_conditions_array.append({
                 "conditions" : conditions,
@@ -305,9 +305,10 @@ class TimeSeriesConditionsDirector:
                     if condition == weekday:
                         value += add_values[i]
 
-                for i,condition in enumerate(general_conditions_array[0]["conditions"]):
-                    if condition == weekday:
-                        value += general_conditions_array[0]["add_values"][i]
+                if len(general_conditions_array) > 0:
+                    for i,condition in enumerate(general_conditions_array[0]["conditions"]):
+                        if condition == weekday:
+                            value += general_conditions_array[0]["add_values"][i]
                 weekly_seasonality.append(value)
 
             weekly_conditions_array.append({
@@ -381,9 +382,10 @@ class TimeSeriesConditionsDirector:
                     if condition == monthday:
                         value += add_values[i]
 
-                for i, condition in enumerate(general_conditions_array[0]["conditions"]):
-                    if condition == monthday:
-                        value += general_conditions_array[0]["add_values"][i]
+                if len(general_conditions_array) > 0:
+                    for i, condition in enumerate(general_conditions_array[0]["conditions"]):
+                        if condition == monthday:
+                            value += general_conditions_array[0]["add_values"][i]
                 monthly_seasonality.append(value)
 
             monthly_conditions_array.append({
@@ -521,6 +523,7 @@ class TimeSeriesConditionsDirector:
         self._build_yearly()
 
         self.time_series_data["time_series"] = self.time_series_generator.ts["y"].tolist()
+        self.time_series_data["ds"] = list(map(lambda x : str(x), self.time_series_generator.ts["ds"].tolist()))
 
         return self.time_series_data.copy()
 

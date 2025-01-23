@@ -1,6 +1,6 @@
 {
   "changepoints_start_end_interval" : 30,
-  "max_number_changepoints" : 5,
+  "max_number_changepoints" : 8,
   "max_conditions_week" : 3,
   "max_conditions_month" : 10,
   "max_conditions_year" : 3,
@@ -10,5 +10,5 @@
   "max_value_series" : 24,
   "min_value_series" : 0,
   "asset_start_date" : "2023-01-01",
-  "contract_years_range" : [3,6]
+  "contract_years_range" : [5,5]
 }

@@ -1,8 +1,7 @@
 import matplotlib.pyplot as plt
 import streamlit as st
 import json
-from time_series_generation.tsg_components_style import TimeSeriesGeneratorComponents, \
-    TimeSeriesComponents, ComponentsFlags
+from time_series_generation.tsg_components_style import TimeSeriesGeneratorComponents, ComponentsFlags
 
 
 # Step 1: Fixed Instances (using caching)
@@ -13,7 +12,7 @@ def initialize_time_series_objects():
         config = json.load(config_file)
 
     # Initialize Time Series Generator and Director
-    tsg = TimeSeriesGeneratorComponents(TimeSeriesComponents(), config)
+    tsg = TimeSeriesGeneratorComponents(config)
 
     return tsg, config
 
@@ -184,5 +183,5 @@ if submitted:
 
 
 
-    #streamlit run main_neural_prophet_streamlit.py
+    #streamlit run main_components_style_streamlit.py
     #jupyter notebook --NotebookApp.allow_origin='https://colab.research.google.com' --port=8888 --no-browser

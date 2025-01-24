@@ -232,7 +232,7 @@ def generate_loop(num_generation, name_output):
 
 
 if __name__ == '__main__':
-    #generate_loop(num_generation=5, name_output="data_t2")
-    #plot_main(2, name_input="data_t2")
+    #generate_loop(num_generation=3, name_output="data_t2")
+    #plot_main(1, name_input="data_t2")
     #aggregates_scores_main(name_input="data_t2")
     generate_ts_loop(num_generation=2, name_output="time_series_generated", plotting=True)

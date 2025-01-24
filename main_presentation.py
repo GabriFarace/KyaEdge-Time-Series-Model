@@ -1,4 +1,3 @@
-from main_synthetic_asset_data_generation import reduction_monthly
 from synthetic_asset_data_generation.asset_data_generation import AssetDataGenerator
 from synthetic_asset_data_generation.estimators import AssetScoresEstimator, get_forecasted_telemetry
 import json
